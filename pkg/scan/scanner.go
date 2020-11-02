@@ -45,6 +45,7 @@ func NewScanner(ctx context.Context) *Scanner {
 		lock:      &sync.Mutex{},
 		wg:        &sync.WaitGroup{},
 		nodeCh:    make(chan *Node),
+		nodes:     make(map[nodeID]*Node),
 		typeIdGen: getTypeID,
 	}
 	if ctx == nil {

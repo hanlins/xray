@@ -94,3 +94,44 @@ func TestAcceptNode(t *testing.T) {
 	assert.False(t, s3.acceptNode(NewNode(varStr)))
 	assert.False(t, s3.acceptNode(NewNode(varStruct)))
 }
+
+func TestDecomposePrimitives(t *testing.T) {
+	s := NewScanner(nil).WithParallism(3)
+
+	s.decompose(context.Background(), nil, 1)
+	s.decompose(context.Background(), nil, true)
+	s.decompose(context.Background(), nil, "test")
+
+	// should store all primitives
+	assert.Len(t, s.nodes, 3)
+
+	// primitives has no children
+	intNode := <-s.nodeCh
+	assert.Len(t, intNode.Children, 0)
+	boolNode := <-s.nodeCh
+	assert.Len(t, boolNode.Children, 0)
+	strNode := <-s.nodeCh
+	assert.Len(t, strNode.Children, 0)
+}
+
+func TestDecomposePtr(t *testing.T) {
+	str := "string"
+	strPtr1 := &str
+	strPtr2 := &str
+	s := NewScanner(nil).WithParallism(2)
+
+	s.decompose(context.Background(), nil, strPtr1)
+	assert.Len(t, s.nodes, 2)
+
+	// same pointer is stored only once
+	s.decompose(context.Background(), nil, strPtr2)
+	assert.Len(t, s.nodes, 2)
+
+	// string should has no children
+	strNode := <-s.nodeCh
+	assert.Len(t, strNode.Children, 0)
+
+	// strPtr should have children
+	strPtrNode := <-s.nodeCh
+	assert.Len(t, strPtrNode.Children, 1)
+}
