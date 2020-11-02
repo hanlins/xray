@@ -40,7 +40,13 @@ func TestRegisterChild(t *testing.T) {
 	s1, s2, s3 := student{"s1", "id1"}, student{"s2", "id2"}, student{"s3", "id3"}
 	n1, n2, n3 := NewNode(&s1), NewNode(&s2), NewNode(&s3)
 
-	assert.True(t, n1.RegisterChild(n2))
-	assert.True(t, n1.RegisterChild(n3))
-	assert.False(t, n1.RegisterChild(n2))
+	// n2_2 reference the same obj as n2 but it's a different node obj
+	n2_2 := NewNode(&s2)
+
+	assert.True(t, n1.RegisterChild(n2, getTypeID))
+	assert.True(t, n1.RegisterChild(n3, getTypeID))
+	assert.False(t, n1.RegisterChild(n2, getTypeID))
+
+	// make sure node objects that points to the same object won't duplicate
+	assert.False(t, n1.RegisterChild(n2_2, getTypeID))
 }

@@ -17,20 +17,6 @@ func TestDefaultTypeIdGenerator(t *testing.T) {
 	assert.Equal(t, "github.com/stretchr/testify/assert/Comparison/assert.Comparison", getTypeID(reflect.TypeOf(thirdPartyObj)))
 }
 
-// checkObjBlock return true if obj channel is blocked
-func checkObjBlock(s *Scanner, timeout time.Duration) bool {
-	resultCh := make(chan bool)
-	go func(objch chan<- interface{}, resultCh chan<- bool) {
-		select {
-		case s.objCh <- s:
-			resultCh <- false
-		case <-time.After(timeout):
-			resultCh <- true
-		}
-	}(s.objCh, resultCh)
-	return <-resultCh
-}
-
 // checkNodeBlock return true if node channel is blocked
 func checkNodeBlock(s *Scanner, timeout time.Duration) bool {
 	resultCh := make(chan bool)
@@ -51,17 +37,13 @@ func TestWithParallism(t *testing.T) {
 	timeout := 5 * time.Microsecond
 
 	assert.Equal(t, 0, scanner.parallism)
-	assert.True(t, checkObjBlock(scanner, timeout))
 	assert.True(t, checkNodeBlock(scanner, timeout))
 
 	scanner = scanner.WithParallism(2)
 	// first two attempts unblocked
-	assert.False(t, checkObjBlock(scanner, timeout))
 	assert.False(t, checkNodeBlock(scanner, timeout))
-	assert.False(t, checkObjBlock(scanner, timeout))
 	assert.False(t, checkNodeBlock(scanner, timeout))
 	// third attempt blocked
-	assert.True(t, checkObjBlock(scanner, timeout))
 	assert.True(t, checkNodeBlock(scanner, timeout))
 }
 
@@ -88,11 +70,11 @@ func TestAcceptNode(t *testing.T) {
 	varStruct := struct{ a int }{a: 1}
 
 	noStr := func(node *Node) bool {
-		k := node.typeInfo.Kind()
+		k := node.value.Type().Kind()
 		return k != reflect.String
 	}
 	noStruct := func(node *Node) bool {
-		k := node.typeInfo.Kind()
+		k := node.value.Type().Kind()
 		return k != reflect.Struct
 	}
 
