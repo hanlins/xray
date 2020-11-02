@@ -200,8 +200,7 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj interface{}) 
 	case reflect.Map:
 		s.handleMap(ctx, wg, node)
 	case reflect.Struct:
-		// TODO
-		wg.Done()
+		s.handleStruct(ctx, wg, node)
 	default:
 		// TODO: error handling
 		wg.Done()
@@ -273,4 +272,16 @@ func (s *Scanner) handleMap(ctx context.Context, wg *sync.WaitGroup, node *Node)
 			wg.Done()
 		}()
 	}
+}
+
+func (s *Scanner) handleStruct(ctx context.Context, wg *sync.WaitGroup, node *Node) {
+	for i := 0; i < node.value.NumField(); i++ {
+		field := node.value.Field(i)
+		wg.Add(1)
+		go func() {
+			s.decompose(ctx, node, field.Interface())
+			wg.Done()
+		}()
+	}
+	wg.Done()
 }
