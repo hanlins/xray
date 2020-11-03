@@ -170,8 +170,7 @@ func TestDecomposeSimpleStruct(t *testing.T) {
 	s := NewScanner(nil).WithParallism(5)
 
 	s.decompose(context.Background(), nil, reflect.ValueOf(dummyNode))
-	length := len(s.nodes)
-	assert.Equal(t, length, 3)
+	assert.Equal(t, 3, len(s.nodes))
 
 	// exported int node should has no children
 	intNode1 := <-s.nodeCh
@@ -203,5 +202,31 @@ func TestDecompositionSimpleMap(t *testing.T) {
 	assert.Len(t, mapNode.Children, 1)
 
 	assert.Len(t, s.maps, 1)
-	assert.Equal(t, s.maps[s.getNodeID(mapNode)][s.getNodeID(kNode)], s.getNodeID(vNode))
+	assert.Equal(t, s.getNodeID(vNode), s.maps[s.getNodeID(mapNode)][s.getNodeID(kNode)])
+}
+
+func TestDecompositionMapSimpleStruct(t *testing.T) {
+	m := make(map[string]testStruct)
+	m["foo"] = testStruct{1, 2}
+	s := NewScanner(nil).WithParallism(5)
+
+	s.decompose(context.Background(), nil, reflect.ValueOf(m))
+	assert.Equal(t, 5, len(s.nodes))
+	assert.Len(t, s.maps, 1)
+
+	var structNode, mapNode *Node
+	for {
+		n := <-s.nodeCh
+		switch n.value.Type().Kind() {
+		case reflect.Struct:
+			structNode = n
+		case reflect.Map:
+			mapNode = n
+		}
+		if structNode != nil && mapNode != nil {
+			break
+		}
+	}
+	assert.Len(t, mapNode.Children, 1)
+	assert.Len(t, structNode.Children, 2)
 }

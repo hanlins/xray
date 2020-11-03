@@ -252,6 +252,7 @@ func (s *Scanner) handleMap(ctx context.Context, wg *sync.WaitGroup, node *Node)
 		mapID := s.getNodeID(node)
 		// map the key and val
 		go func() {
+			defer wg.Done()
 			keyNode, valNode := NewNode(keyVal), NewNode(valVal)
 			keyID, valID := s.getNodeID(keyNode), s.getNodeID(valNode)
 
@@ -273,12 +274,11 @@ func (s *Scanner) handleMap(ctx context.Context, wg *sync.WaitGroup, node *Node)
 					}
 					s.registerKVPair(mapID, keyID, valID)
 					s.lock.Unlock()
-					break
+					return
 				case <-ctx.Done():
-					break
+					return
 				}
 			}
-			wg.Done()
 		}()
 	}
 }
