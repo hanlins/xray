@@ -121,6 +121,20 @@ func TestDecomposePrimitives(t *testing.T) {
 	assert.Len(t, nilNode.Children, 0)
 }
 
+func TestDecomposeInterface(t *testing.T) {
+	s := NewScanner(nil).WithParallism(1)
+
+	func(iface interface{}) {
+		s.decompose(context.Background(), nil, reflect.ValueOf(iface))
+	}("fake obj")
+
+	ifaceNode := <-s.nodeCh
+	assert.Len(t, ifaceNode.Children, 0)
+	// the kind won't be affected by where the value is being used
+	// it's still considered as a string
+	assert.Equal(t, reflect.String, ifaceNode.value.Type().Kind())
+}
+
 func TestDecomposePtr(t *testing.T) {
 	str := "string"
 	strPtr1 := &str
