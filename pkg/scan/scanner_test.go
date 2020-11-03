@@ -272,3 +272,15 @@ func TestDecompositionNestedStruct(t *testing.T) {
 	s2.decompose(context.Background(), nil, reflect.ValueOf(testObj2))
 	assert.Equal(t, 5, len(s2.nodes))
 }
+
+func TestSimpleScan(t *testing.T) {
+	s := NewScanner(nil)
+	c := s.Scan("foo", "bar")
+
+	_, ok := <-c
+	assert.True(t, ok)
+	_, ok = <-c
+	assert.True(t, ok)
+	_, ok = <-c
+	assert.False(t, ok)
+}

@@ -315,17 +315,17 @@ func (s *Scanner) registerKVPair(mid, kid, vid nodeID) {
 // When all nodes are sent over the channel, it will be closed.
 func (s *Scanner) Scan(objs ...interface{}) <-chan *Node {
 	wg := &sync.WaitGroup{}
+	wg.Add(len(objs))
 	for _, obj := range objs {
-		go func() {
-			wg.Add(1)
+		go func(obj interface{}) {
+			defer wg.Done()
 			s.decompose(s.ctx, nil, reflect.ValueOf(obj))
-			wg.Done()
-		}()
+		}(obj)
 	}
 	go func() {
+		defer close(s.nodeCh)
 		// when all routines finished, close the channel
 		wg.Wait()
-		close(s.nodeCh)
 	}()
 	return s.nodeCh
 }
