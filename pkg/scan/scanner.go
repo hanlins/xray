@@ -309,3 +309,23 @@ func (s *Scanner) registerKVPair(mid, kid, vid nodeID) {
 	s.maps[mid][kid] = vid
 	return
 }
+
+// Scan starts the object decomposition process. It's a non-blocking operation.
+// It will return a channel of nodes and consumer can listen on the channel.
+// When all nodes are sent over the channel, it will be closed.
+func (s *Scanner) Scan(objs ...interface{}) <-chan *Node {
+	wg := &sync.WaitGroup{}
+	for _, obj := range objs {
+		go func() {
+			wg.Add(1)
+			s.decompose(s.ctx, nil, reflect.ValueOf(obj))
+			wg.Done()
+		}()
+	}
+	go func() {
+		// when all routines finished, close the channel
+		wg.Wait()
+		close(s.nodeCh)
+	}()
+	return s.nodeCh
+}
