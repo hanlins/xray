@@ -20,6 +20,9 @@ type Node struct {
 
 	// Children is the set of children nodes of the golang object
 	Children map[nodeID]*Node
+
+	// Fields is for structed object, field name will be mapped to a node ID
+	Fields map[string]nodeID
 }
 
 // NewNode initiates a new node for a given golang object
@@ -29,6 +32,9 @@ func NewNode(value reflect.Value) *Node {
 		value: value,
 	}
 	node.Children = make(map[nodeID]*Node)
+	if value.Kind() == reflect.Struct {
+		node.Fields = make(map[string]nodeID)
+	}
 	return node
 }
 
@@ -72,4 +78,17 @@ func (n *Node) InferPtr() reflect.Value {
 // Kind returns the kind of the current node
 func (n *Node) Kind() reflect.Kind {
 	return n.value.Kind()
+}
+
+// Kind returns the kind of the current node
+func (n *Node) Value() reflect.Value {
+	return n.value
+}
+
+// RegisterField add the field name -> node ID mapping to the node
+func (n *Node) RegisterField(fieldName string, id nodeID) {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+
+	n.Fields[fieldName] = id
 }
