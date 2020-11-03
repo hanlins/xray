@@ -139,7 +139,7 @@ func (s *Scanner) getNodeID(node *Node) nodeID {
 // decompose breaks the given interface down
 // decompose will block until the object and its underlying elements are all
 // scanned
-func (s *Scanner) decompose(ctx context.Context, parent *Node, obj interface{}) {
+func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value) {
 	node := NewNode(obj)
 
 	// ignore the filtered nodes
@@ -164,7 +164,9 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj interface{}) 
 	}
 
 	// send the node that is decomposed completely
-	defer func() { s.nodeCh <- node }()
+	defer func() {
+		s.nodeCh <- node
+	}()
 
 	// check if user don't want to further break down the object
 	if s.isTerminal(node) {
@@ -173,6 +175,7 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj interface{}) 
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
+
 	switch node.value.Kind() {
 	// reflexive primitives
 	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16:
@@ -214,7 +217,7 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj interface{}) 
 
 func (s *Scanner) handleArray(ctx context.Context, wg *sync.WaitGroup, node *Node) {
 	for i := 0; i < node.value.Len(); i++ {
-		obj := node.value.Index(i).Interface()
+		obj := node.value.Index(i)
 		wg.Add(1)
 		go func() {
 			s.decompose(ctx, node, obj)
@@ -230,21 +233,21 @@ func (s *Scanner) handleMap(ctx context.Context, wg *sync.WaitGroup, node *Node)
 		ctlCh := make(chan int, 2)
 		wg.Add(1)
 		go func() {
-			s.decompose(ctx, node, keyVal.Interface())
+			s.decompose(ctx, node, keyVal)
 			// signal key complete
 			ctlCh <- 1
 			wg.Done()
 		}()
 		wg.Add(1)
 		go func() {
-			s.decompose(ctx, node, valVal.Interface())
+			s.decompose(ctx, node, valVal)
 			// signal val complete
 			ctlCh <- 2
 			wg.Done()
 		}()
 		// map the key and val
 		go func() {
-			keyNode, valNode := NewNode(keyVal.Interface()), NewNode(valVal.Interface())
+			keyNode, valNode := NewNode(keyVal), NewNode(valVal)
 			keyID, valID := s.getNodeID(keyNode), s.getNodeID(valNode)
 
 			for {
@@ -280,8 +283,8 @@ func (s *Scanner) handleStruct(ctx context.Context, wg *sync.WaitGroup, node *No
 		field := node.value.Field(i)
 		wg.Add(1)
 		go func() {
-			s.decompose(ctx, node, field.Interface())
-			wg.Done()
+			defer wg.Done()
+			s.decompose(ctx, node, field)
 		}()
 	}
 	wg.Done()

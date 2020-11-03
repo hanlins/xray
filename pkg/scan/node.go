@@ -27,10 +27,10 @@ type Node struct {
 }
 
 // NewNode initiates a new node for a given golang object
-func NewNode(obj interface{}) *Node {
+func NewNode(value reflect.Value) *Node {
 	node := &Node{
 		lock:  &sync.Mutex{},
-		value: reflect.ValueOf(obj),
+		value: value,
 	}
 	node.Children = make(map[nodeID]*Node)
 	return node
@@ -65,8 +65,8 @@ func (n *Node) RegisterChild(node *Node, typeIdGen func(reflect.Type) string) bo
 
 // InferPtr returns the object being pointed by this pointer node
 // will panic if the node is not a pointer
-func (n *Node) InferPtr() interface{} {
-	return n.value.Elem().Interface()
+func (n *Node) InferPtr() reflect.Value {
+	return n.value.Elem()
 }
 
 func (n *Node) AddMap(target *Node) {
