@@ -140,6 +140,22 @@ func TestDecomposePtr(t *testing.T) {
 	assert.Len(t, strPtrNode.Children, 1)
 }
 
+func TestDecomposerSimpleArray(t *testing.T) {
+	arr := []int{1, 2, 3}
+	s := NewScanner(nil).WithParallism(4)
+
+	s.decompose(context.Background(), nil, reflect.ValueOf(arr))
+	assert.Len(t, s.nodes, 4)
+
+	_ = <-s.nodeCh
+	_ = <-s.nodeCh
+	_ = <-s.nodeCh
+
+	// array node should have 3 children
+	arrNode := <-s.nodeCh
+	assert.Len(t, arrNode.Children, 3)
+}
+
 type testStruct struct {
 	Exported    int
 	nonExported int
