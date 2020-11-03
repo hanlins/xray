@@ -284,3 +284,18 @@ func TestSimpleScan(t *testing.T) {
 	_, ok = <-c
 	assert.False(t, ok)
 }
+
+type list struct {
+	next *list
+}
+
+func TestLinkedList(t *testing.T) {
+	// create a loop
+	head := &list{}
+	head.next = &list{}
+	head.next.next = head
+
+	s1 := NewScanner(nil).WithParallism(6)
+	s1.decompose(context.Background(), nil, reflect.ValueOf(head))
+	assert.Equal(t, 6, len(s1.nodes))
+}
