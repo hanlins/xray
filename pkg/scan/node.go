@@ -20,10 +20,6 @@ type Node struct {
 
 	// Children is the set of children nodes of the golang object
 	Children map[nodeID]*Node
-
-	// Map marks the the KV pair in a map
-	// the node itself is a key element, the Map points to its value element
-	Map *Node
 }
 
 // NewNode initiates a new node for a given golang object
