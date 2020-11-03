@@ -68,10 +68,3 @@ func (n *Node) RegisterChild(node *Node, typeIdGen func(reflect.Type) string) bo
 func (n *Node) InferPtr() reflect.Value {
 	return n.value.Elem()
 }
-
-func (n *Node) AddMap(target *Node) {
-	n.lock.Lock()
-	defer n.lock.Unlock()
-
-	n.Map = target
-}

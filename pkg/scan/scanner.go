@@ -18,6 +18,8 @@ type Scanner struct {
 
 	// scanned results, all nodes that has been scanned
 	nodes map[nodeID]*Node
+	// maps stores the KV pairs for each map
+	maps map[nodeID]map[nodeID]nodeID
 
 	// typeIdGen is used to customize type name
 	typeIdGen func(reflect.Type) string
@@ -46,6 +48,7 @@ func NewScanner(ctx context.Context) *Scanner {
 		wg:        &sync.WaitGroup{},
 		nodeCh:    make(chan *Node),
 		nodes:     make(map[nodeID]*Node),
+		maps:      make(map[nodeID]map[nodeID]nodeID),
 		typeIdGen: getTypeID,
 	}
 	if ctx == nil {
@@ -231,20 +234,22 @@ func (s *Scanner) handleMap(ctx context.Context, wg *sync.WaitGroup, node *Node)
 	for _, keyVal := range node.value.MapKeys() {
 		valVal := node.value.MapIndex(keyVal)
 		ctlCh := make(chan int, 2)
+		// notice: only mark key as map's children
 		wg.Add(1)
 		go func() {
 			s.decompose(ctx, node, keyVal)
+			wg.Done()
 			// signal key complete
 			ctlCh <- 1
-			wg.Done()
 		}()
 		wg.Add(1)
 		go func() {
-			s.decompose(ctx, node, valVal)
+			s.decompose(ctx, nil, valVal)
+			wg.Done()
 			// signal val complete
 			ctlCh <- 2
-			wg.Done()
 		}()
+		mapID := s.getNodeID(node)
 		// map the key and val
 		go func() {
 			keyNode, valNode := NewNode(keyVal), NewNode(valVal)
@@ -266,7 +271,7 @@ func (s *Scanner) handleMap(ctx context.Context, wg *sync.WaitGroup, node *Node)
 					} else {
 						valNode = prevValNode
 					}
-					keyNode.AddMap(valNode)
+					s.registerKVPair(mapID, keyID, valID)
 					s.lock.Unlock()
 					break
 				case <-ctx.Done():
@@ -288,4 +293,13 @@ func (s *Scanner) handleStruct(ctx context.Context, wg *sync.WaitGroup, node *No
 		}()
 	}
 	wg.Done()
+}
+
+// registerKVPair assumps the environment is locked
+func (s *Scanner) registerKVPair(mid, kid, vid nodeID) {
+	if _, exist := s.maps[mid]; !exist {
+		s.maps[mid] = make(map[nodeID]nodeID)
+	}
+	s.maps[mid][kid] = vid
+	return
 }
