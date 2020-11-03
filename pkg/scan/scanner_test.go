@@ -185,3 +185,23 @@ func TestDecomposeSimpleStruct(t *testing.T) {
 	structNode := <-s.nodeCh
 	assert.Len(t, structNode.Children, 2)
 }
+
+func TestDecompositionSimpleMap(t *testing.T) {
+	m := make(map[string]int)
+	m["foo"] = 1
+	s := NewScanner(nil).WithParallism(3)
+
+	s.decompose(context.Background(), nil, reflect.ValueOf(m))
+	assert.Len(t, s.nodes, 3)
+
+	kNode := <-s.nodeCh
+	assert.Len(t, kNode.Children, 0)
+	vNode := <-s.nodeCh
+	assert.Len(t, vNode.Children, 0)
+
+	mapNode := <-s.nodeCh
+	assert.Len(t, mapNode.Children, 1)
+
+	assert.Len(t, s.maps, 1)
+	assert.Equal(t, s.maps[s.getNodeID(mapNode)][s.getNodeID(kNode)], s.getNodeID(vNode))
+}
