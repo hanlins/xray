@@ -100,14 +100,15 @@ func TestAcceptNode(t *testing.T) {
 }
 
 func TestDecomposePrimitives(t *testing.T) {
-	s := NewScanner(nil).WithParallism(3)
+	s := NewScanner(nil).WithParallism(4)
 
 	s.decompose(context.Background(), nil, reflect.ValueOf(1))
 	s.decompose(context.Background(), nil, reflect.ValueOf(true))
 	s.decompose(context.Background(), nil, reflect.ValueOf("test"))
+	s.decompose(context.Background(), nil, reflect.ValueOf(nil))
 
 	// should store all primitives
-	assert.Len(t, s.nodes, 3)
+	assert.Len(t, s.nodes, 4)
 
 	// primitives has no children
 	intNode := <-s.nodeCh
@@ -116,6 +117,8 @@ func TestDecomposePrimitives(t *testing.T) {
 	assert.Len(t, boolNode.Children, 0)
 	strNode := <-s.nodeCh
 	assert.Len(t, strNode.Children, 0)
+	nilNode := <-s.nodeCh
+	assert.Len(t, nilNode.Children, 0)
 }
 
 func TestDecomposePtr(t *testing.T) {

@@ -217,6 +217,7 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value
 		// TODO: error handling
 		wg.Done()
 	}
+
 	// return when the node is completely handled
 	wg.Wait()
 

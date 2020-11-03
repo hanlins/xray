@@ -39,10 +39,14 @@ func (n *Node) ResolveObj() interface{} {
 
 // nodeID derives the nodeID for a given node
 func (n *Node) nodeID(typeIdGen func(reflect.Type) string) nodeID {
-	return nodeID{
-		typeStr: typeIdGen(n.value.Type()),
-		value:   n.value,
+	id := nodeID{value: n.value}
+	emptyValue := reflect.Value{}
+	if n.value == emptyValue {
+		id.typeStr = "nil"
+	} else {
+		id.typeStr = typeIdGen(n.value.Type())
 	}
+	return id
 }
 
 // RegisterChild returns true if successfully register child node
