@@ -230,3 +230,28 @@ func TestDecompositionMapSimpleStruct(t *testing.T) {
 	assert.Len(t, mapNode.Children, 1)
 	assert.Len(t, structNode.Children, 2)
 }
+
+type nestedStruct struct {
+	ts  testStruct
+	tsp *testStruct
+}
+
+func TestDecompositionNestedStruct(t *testing.T) {
+	innerStruct := testStruct{10, 20}
+	testObj1 := nestedStruct{
+		ts:  innerStruct, // notice this struct will be copied
+		tsp: &innerStruct,
+	}
+	testObj2 := nestedStruct{
+		ts:  innerStruct, // notice this struct will be copied
+		tsp: nil,
+	}
+
+	s1 := NewScanner(nil).WithParallism(8)
+	s1.decompose(context.Background(), nil, reflect.ValueOf(testObj1))
+	assert.Equal(t, 8, len(s1.nodes))
+
+	s2 := NewScanner(nil).WithParallism(5)
+	s2.decompose(context.Background(), nil, reflect.ValueOf(testObj2))
+	assert.Equal(t, 5, len(s2.nodes))
+}

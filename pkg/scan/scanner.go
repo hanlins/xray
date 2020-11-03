@@ -198,6 +198,11 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value
 		// no further decomposition required, directly return
 		return
 	case reflect.Ptr:
+		// skip further infer if object is nil
+		if obj.IsNil() {
+			wg.Done()
+			break
+		}
 		go func() {
 			s.decompose(ctx, node, node.InferPtr())
 			wg.Done()
