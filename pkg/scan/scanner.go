@@ -179,7 +179,7 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
-	switch node.value.Kind() {
+	switch node.Kind() {
 	// reflexive primitives
 	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16:
 		fallthrough

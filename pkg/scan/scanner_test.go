@@ -74,11 +74,11 @@ func TestAcceptNode(t *testing.T) {
 	varStruct := struct{ a int }{a: 1}
 
 	noStr := func(node *Node) bool {
-		k := node.value.Type().Kind()
+		k := node.Kind()
 		return k != reflect.String
 	}
 	noStruct := func(node *Node) bool {
-		k := node.value.Type().Kind()
+		k := node.Kind()
 		return k != reflect.Struct
 	}
 
@@ -132,7 +132,7 @@ func TestDecomposeInterface(t *testing.T) {
 	assert.Len(t, ifaceNode.Children, 0)
 	// the kind won't be affected by where the value is being used
 	// it's still considered as a string
-	assert.Equal(t, reflect.String, ifaceNode.value.Type().Kind())
+	assert.Equal(t, reflect.String, ifaceNode.Kind())
 }
 
 func TestDecomposePtr(t *testing.T) {
@@ -234,7 +234,7 @@ func TestDecompositionMapSimpleStruct(t *testing.T) {
 	var structNode, mapNode *Node
 	for {
 		n := <-s.nodeCh
-		switch n.value.Type().Kind() {
+		switch n.Kind() {
 		case reflect.Struct:
 			structNode = n
 		case reflect.Map:

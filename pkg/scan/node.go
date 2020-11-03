@@ -68,3 +68,8 @@ func (n *Node) RegisterChild(node *Node, typeIdGen func(reflect.Type) string) bo
 func (n *Node) InferPtr() reflect.Value {
 	return n.value.Elem()
 }
+
+// Kind returns the kind of the current node
+func (n *Node) Kind() reflect.Kind {
+	return n.value.Kind()
+}
