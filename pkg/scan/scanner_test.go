@@ -342,3 +342,17 @@ func TestLinkedList(t *testing.T) {
 	s1.decompose(context.Background(), nil, reflect.ValueOf(head), "")
 	assert.Len(t, s1.nodes, 6)
 }
+
+func TestScannerNodes(t *testing.T) {
+	s := NewScanner(nil)
+	_ = s.Scan(nil)
+
+	assert.Equal(t, s.nodes, s.Nodes())
+}
+
+func TestScannerMaps(t *testing.T) {
+	s := NewScanner(nil)
+	_ = s.Scan(nil)
+
+	assert.Equal(t, s.maps, s.Maps())
+}

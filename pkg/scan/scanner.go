@@ -334,3 +334,13 @@ func (s *Scanner) Scan(objs ...interface{}) <-chan *Node {
 	}()
 	return s.nodeCh
 }
+
+// Nodes returns the scanned nodes map maintained by the scanner
+func (s *Scanner) Nodes() map[NodeID]*Node {
+	return s.nodes
+}
+
+// Maps returns the scanned KV pairs stored for maps maintained by the scanner
+func (s *Scanner) Maps() map[NodeID]map[NodeID]NodeID {
+	return s.maps
+}
