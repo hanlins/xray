@@ -60,13 +60,13 @@ func TestWithFilter(t *testing.T) {
 	}
 
 	scanner := NewScanner(nil)
-	assert.Equal(t, 0, len(scanner.filters))
+	assert.Len(t, scanner.filters, 0)
 
 	scanner = scanner.WithFilter(f1).WithFilter(f2)
-	assert.Equal(t, 2, len(scanner.filters))
+	assert.Len(t, scanner.filters, 2)
 
 	scanner = scanner.WithFilter(f1).WithFilter(f2)
-	assert.Equal(t, 2, len(scanner.filters))
+	assert.Len(t, scanner.filters, 2)
 }
 
 func TestAcceptNode(t *testing.T) {
@@ -146,12 +146,15 @@ func TestDecomposeInterfaceStruct(t *testing.T) {
 		s.decompose(context.Background(), nil, reflect.ValueOf(iface), "")
 	}(&dummyNode)
 
-	assert.Equal(t, 4, len(s.nodes))
+	assert.Len(t, s.nodes, 4)
 	_ = <-s.nodeCh
 	_ = <-s.nodeCh
 	ifaceNode := <-s.nodeCh
 	assert.Len(t, ifaceNode.Fields, 2)
+	assert.Len(t, ifaceNode.Children, 2)
 	assert.Equal(t, reflect.Struct, ifaceNode.Kind())
+	ptrNode := <-s.nodeCh
+	assert.Len(t, ptrNode.Children, 1)
 }
 
 func TestDecomposePtr(t *testing.T) {
@@ -206,7 +209,7 @@ func TestDecomposeSimpleStruct(t *testing.T) {
 	s := NewScanner(nil).WithParallism(5)
 
 	s.decompose(context.Background(), nil, reflect.ValueOf(dummyNode), "")
-	assert.Equal(t, 3, len(s.nodes))
+	assert.Len(t, s.nodes, 3)
 
 	// exported int node should has no children
 	intNode1 := <-s.nodeCh
@@ -230,7 +233,7 @@ func TestStructFields(t *testing.T) {
 	s := NewScanner(nil).WithParallism(5)
 
 	s.decompose(context.Background(), nil, reflect.ValueOf(dummyNode), "")
-	assert.Equal(t, 3, len(s.nodes))
+	assert.Len(t, s.nodes, 3)
 
 	_ = <-s.nodeCh
 	_ = <-s.nodeCh
@@ -268,7 +271,7 @@ func TestDecompositionMapSimpleStruct(t *testing.T) {
 	s := NewScanner(nil).WithParallism(5)
 
 	s.decompose(context.Background(), nil, reflect.ValueOf(m), "")
-	assert.Equal(t, 5, len(s.nodes))
+	assert.Len(t, s.nodes, 5)
 	assert.Len(t, s.maps, 1)
 
 	var structNode, mapNode *Node
@@ -306,11 +309,11 @@ func TestDecompositionNestedStruct(t *testing.T) {
 
 	s1 := NewScanner(nil).WithParallism(8)
 	s1.decompose(context.Background(), nil, reflect.ValueOf(testObj1), "")
-	assert.Equal(t, 8, len(s1.nodes))
+	assert.Len(t, s1.nodes, 8)
 
 	s2 := NewScanner(nil).WithParallism(5)
 	s2.decompose(context.Background(), nil, reflect.ValueOf(testObj2), "")
-	assert.Equal(t, 5, len(s2.nodes))
+	assert.Len(t, s2.nodes, 5)
 }
 
 func TestSimpleScan(t *testing.T) {
@@ -337,5 +340,5 @@ func TestLinkedList(t *testing.T) {
 
 	s1 := NewScanner(nil).WithParallism(6)
 	s1.decompose(context.Background(), nil, reflect.ValueOf(head), "")
-	assert.Equal(t, 6, len(s1.nodes))
+	assert.Len(t, s1.nodes, 6)
 }
