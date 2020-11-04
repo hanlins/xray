@@ -135,6 +135,25 @@ func TestDecomposeInterface(t *testing.T) {
 	assert.Equal(t, reflect.String, ifaceNode.Kind())
 }
 
+func TestDecomposeInterfaceStruct(t *testing.T) {
+	dummyNode := testStruct{
+		Exported:    1,
+		nonExported: 2,
+	}
+	s := NewScanner(nil).WithParallism(4)
+
+	func(iface interface{}) {
+		s.decompose(context.Background(), nil, reflect.ValueOf(iface), "")
+	}(&dummyNode)
+
+	assert.Equal(t, 4, len(s.nodes))
+	_ = <-s.nodeCh
+	_ = <-s.nodeCh
+	ifaceNode := <-s.nodeCh
+	assert.Len(t, ifaceNode.Fields, 2)
+	assert.Equal(t, reflect.Struct, ifaceNode.Kind())
+}
+
 func TestDecomposePtr(t *testing.T) {
 	str := "string"
 	strPtr1 := &str
