@@ -51,3 +51,34 @@ func TestRegisterChild(t *testing.T) {
 	// make sure node objects that points to the same object won't duplicate
 	assert.False(t, n1.RegisterChild(n2_2, getTypeID))
 }
+
+func TestNilNodeIDString(t *testing.T) {
+	nilNode := NewNode(reflect.ValueOf(nil))
+	nilNodeID := nilNode.NodeID(getTypeID)
+	assert.Equal(t, "nil.<invalid reflect.Value>", nilNodeID.String())
+}
+
+func TestPrimitiveNodeIDString(t *testing.T) {
+	intNode := NewNode(reflect.ValueOf(100))
+	intNodeID := intNode.NodeID(getTypeID)
+	assert.Equal(t, "/int/int.100", intNodeID.String())
+}
+
+type nodeTestStruct struct {
+	field1 int
+	field2 int
+}
+
+func TestStructNodeIDString(t *testing.T) {
+	tn := nodeTestStruct{field1: 1, field2: 2}
+	nilNode := NewNode(reflect.ValueOf(tn))
+	nilNodeID := nilNode.NodeID(getTypeID)
+	assert.Equal(t, "github.com/hanlins/objscan/pkg/scan/nodeTestStruct/scan.nodeTestStruct.scan.nodeTestStruct{field1:1, field2:2}", nilNodeID.String())
+}
+
+func TestNodeIDHash(t *testing.T) {
+	nilNode := NewNode(reflect.ValueOf(nil))
+	nilNodeID := nilNode.NodeID(getTypeID)
+	assert.Equal(t, "2951924275", nilNodeID.Hash())
+
+}

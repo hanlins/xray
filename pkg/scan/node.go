@@ -1,12 +1,14 @@
 package scan
 
 import (
+	"fmt"
+	"hash/fnv"
 	"reflect"
 	"sync"
 )
 
-// nodeID is used to uniquely identify a node
-type nodeID struct {
+// NodeID is used to uniquely identify a node
+type NodeID struct {
 	typeStr string
 	value   reflect.Value
 }
@@ -19,10 +21,10 @@ type Node struct {
 	value reflect.Value
 
 	// Children is the set of children nodes of the golang object
-	Children map[nodeID]*Node
+	Children map[NodeID]*Node
 
 	// Fields is for structed object, field name will be mapped to a node ID
-	Fields map[string]nodeID
+	Fields map[string]NodeID
 }
 
 // NewNode initiates a new node for a given golang object
@@ -31,9 +33,9 @@ func NewNode(value reflect.Value) *Node {
 		lock:  &sync.Mutex{},
 		value: value,
 	}
-	node.Children = make(map[nodeID]*Node)
+	node.Children = make(map[NodeID]*Node)
 	if value.Kind() == reflect.Struct {
-		node.Fields = make(map[string]nodeID)
+		node.Fields = make(map[string]NodeID)
 	}
 	return node
 }
@@ -43,9 +45,9 @@ func (n *Node) ResolveObj() interface{} {
 	return n.value.Interface()
 }
 
-// nodeID derives the nodeID for a given node
-func (n *Node) nodeID(typeIdGen func(reflect.Type) string) nodeID {
-	id := nodeID{value: n.value}
+// NodeID derives the NodeID for a given node
+func (n *Node) NodeID(typeIdGen func(reflect.Type) string) NodeID {
+	id := NodeID{value: n.value}
 	emptyValue := reflect.Value{}
 	if n.value == emptyValue {
 		id.typeStr = "nil"
@@ -61,7 +63,7 @@ func (n *Node) RegisterChild(node *Node, typeIdGen func(reflect.Type) string) bo
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
-	id := node.nodeID(typeIdGen)
+	id := node.NodeID(typeIdGen)
 	if _, exist := n.Children[id]; exist {
 		return false
 	}
@@ -86,9 +88,27 @@ func (n *Node) Value() reflect.Value {
 }
 
 // RegisterField add the field name -> node ID mapping to the node
-func (n *Node) RegisterField(fieldName string, id nodeID) {
+func (n *Node) RegisterField(fieldName string, id NodeID) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
 	n.Fields[fieldName] = id
+}
+
+// String returns the string representation of the NodeID object
+// It supposed to be unique among for each node ID
+func (nid *NodeID) String() string {
+	return fmt.Sprintf("%s.%#v", nid.typeStr, nid.value)
+}
+
+func hash(s string) uint32 {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return h.Sum32()
+}
+
+// Hash returns the hash version of NodeID identifier
+// It supposed to be unique among for each node ID
+func (nid *NodeID) Hash() string {
+	return fmt.Sprintf("%d", hash(nid.String()))
 }

@@ -17,9 +17,9 @@ type Scanner struct {
 	nodeCh    chan *Node
 
 	// scanned results, all nodes that has been scanned
-	nodes map[nodeID]*Node
+	nodes map[NodeID]*Node
 	// maps stores the KV pairs for each map
-	maps map[nodeID]map[nodeID]nodeID
+	maps map[NodeID]map[NodeID]NodeID
 
 	// typeIdGen is used to customize type name
 	typeIdGen func(reflect.Type) string
@@ -47,8 +47,8 @@ func NewScanner(ctx context.Context) *Scanner {
 		lock:      &sync.Mutex{},
 		wg:        &sync.WaitGroup{},
 		nodeCh:    make(chan *Node),
-		nodes:     make(map[nodeID]*Node),
-		maps:      make(map[nodeID]map[nodeID]nodeID),
+		nodes:     make(map[NodeID]*Node),
+		maps:      make(map[NodeID]map[NodeID]NodeID),
 		typeIdGen: getTypeID,
 	}
 	if ctx == nil {
@@ -126,7 +126,7 @@ func (s *Scanner) registerNode(node *Node) *Node {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	nid := node.nodeID(s.typeIdGen)
+	nid := node.NodeID(s.typeIdGen)
 	if prevNodePtr, exist := s.nodes[nid]; exist {
 		return prevNodePtr
 	}
@@ -135,8 +135,8 @@ func (s *Scanner) registerNode(node *Node) *Node {
 	return nil
 }
 
-func (s *Scanner) getNodeID(node *Node) nodeID {
-	return node.nodeID(s.typeIdGen)
+func (s *Scanner) getNodeID(node *Node) NodeID {
+	return node.NodeID(s.typeIdGen)
 }
 
 // decompose breaks the given interface down
@@ -307,9 +307,9 @@ func (s *Scanner) handleStruct(ctx context.Context, wg *sync.WaitGroup, node *No
 }
 
 // registerKVPair assumps the environment is locked
-func (s *Scanner) registerKVPair(mid, kid, vid nodeID) {
+func (s *Scanner) registerKVPair(mid, kid, vid NodeID) {
 	if _, exist := s.maps[mid]; !exist {
-		s.maps[mid] = make(map[nodeID]nodeID)
+		s.maps[mid] = make(map[NodeID]NodeID)
 	}
 	s.maps[mid][kid] = vid
 	return
