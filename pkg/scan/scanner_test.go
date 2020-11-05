@@ -271,6 +271,32 @@ func TestDecompositionSimpleMap(t *testing.T) {
 	assert.Equal(t, s.getNodeID(vNode), s.maps[s.getNodeID(mapNode)][s.getNodeID(kNode)])
 }
 
+// KV values for map are stored as different copies as the address of the
+// variables are different on stack
+func TestDecompositionMultiMapSameValue(t *testing.T) {
+	foo := "foo"
+	bar := "bar"
+	m1 := make(map[string]*string)
+	m1[foo] = &bar
+	m2 := make(map[string]*string)
+	m2[foo] = &bar
+	s := NewScanner(nil).WithParallism(6)
+
+	// add "foo", ptr to "bar", "bar" and the map
+	s.decompose(context.Background(), nil, reflect.ValueOf(m1), "")
+	assert.Len(t, s.nodes, 4)
+	// add new map m2 and another instance of "foo"
+	// pointer and bar are shared
+	s.decompose(context.Background(), nil, reflect.ValueOf(m2), "")
+	assert.Len(t, s.nodes, 4+2)
+
+	// if just shallow copy the map, should not add anything as the map
+	// itself is also a reference
+	m3 := m1
+	s.decompose(context.Background(), nil, reflect.ValueOf(m3), "")
+	assert.Len(t, s.nodes, 4+2+0)
+}
+
 func TestDecompositionMapSimpleStruct(t *testing.T) {
 	m := make(map[string]testStruct)
 	m["foo"] = testStruct{1, 2}
