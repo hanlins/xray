@@ -24,14 +24,14 @@ func newNode(obj interface{}) *Node {
 // checkNodeBlock return true if node channel is blocked
 func checkNodeBlock(s *Scanner, timeout time.Duration) bool {
 	resultCh := make(chan bool)
-	go func(nodech chan<- *Node, resultCh chan<- bool) {
+	go func(nodech chan<- NodeID, resultCh chan<- bool) {
 		select {
-		case s.nodeCh <- newNode(s):
+		case s.nodeIDCh <- s.getNodeID(newNode(s)):
 			resultCh <- false
 		case <-time.After(timeout):
 			resultCh <- true
 		}
-	}(s.nodeCh, resultCh)
+	}(s.nodeIDCh, resultCh)
 	return <-resultCh
 
 }
@@ -111,13 +111,13 @@ func TestDecomposePrimitives(t *testing.T) {
 	assert.Len(t, s.nodes, 4)
 
 	// primitives has no children
-	intNode := <-s.nodeCh
+	intNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, intNode.Children, 0)
-	boolNode := <-s.nodeCh
+	boolNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, boolNode.Children, 0)
-	strNode := <-s.nodeCh
+	strNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, strNode.Children, 0)
-	nilNode := <-s.nodeCh
+	nilNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, nilNode.Children, 0)
 }
 
@@ -128,7 +128,7 @@ func TestDecomposeInterface(t *testing.T) {
 		s.decompose(context.Background(), nil, reflect.ValueOf(iface), "")
 	}("fake obj")
 
-	ifaceNode := <-s.nodeCh
+	ifaceNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, ifaceNode.Children, 0)
 	// the kind won't be affected by where the value is being used
 	// it's still considered as a string
@@ -147,13 +147,13 @@ func TestDecomposeInterfaceStruct(t *testing.T) {
 	}(&dummyNode)
 
 	assert.Len(t, s.nodes, 4)
-	_ = <-s.nodeCh
-	_ = <-s.nodeCh
-	ifaceNode := <-s.nodeCh
+	_ = <-s.nodeIDCh
+	_ = <-s.nodeIDCh
+	ifaceNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, ifaceNode.Fields, 2)
 	assert.Len(t, ifaceNode.Children, 2)
 	assert.Equal(t, reflect.Struct, ifaceNode.Kind())
-	ptrNode := <-s.nodeCh
+	ptrNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, ptrNode.Children, 1)
 }
 
@@ -171,11 +171,11 @@ func TestDecomposePtr(t *testing.T) {
 	assert.Len(t, s.nodes, 2)
 
 	// string should has no children
-	strNode := <-s.nodeCh
+	strNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, strNode.Children, 0)
 
 	// strPtr should have children
-	strPtrNode := <-s.nodeCh
+	strPtrNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, strPtrNode.Children, 1)
 }
 
@@ -186,12 +186,12 @@ func TestDecomposerSimpleArray(t *testing.T) {
 	s.decompose(context.Background(), nil, reflect.ValueOf(arr), "")
 	assert.Len(t, s.nodes, 4)
 
-	_ = <-s.nodeCh
-	_ = <-s.nodeCh
-	_ = <-s.nodeCh
+	_ = <-s.nodeIDCh
+	_ = <-s.nodeIDCh
+	_ = <-s.nodeIDCh
 
 	// array node should have 3 children
-	arrNode := <-s.nodeCh
+	arrNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, arrNode.Children, 3)
 }
 
@@ -212,15 +212,15 @@ func TestDecomposeSimpleStruct(t *testing.T) {
 	assert.Len(t, s.nodes, 3)
 
 	// exported int node should has no children
-	intNode1 := <-s.nodeCh
+	intNode1 := s.Node(<-s.nodeIDCh)
 	assert.Len(t, intNode1.Children, 0)
 
 	// unexported int node should have no children
-	intNode2 := <-s.nodeCh
+	intNode2 := s.Node(<-s.nodeIDCh)
 	assert.Len(t, intNode2.Children, 0)
 
 	// struct node should has no children
-	structNode := <-s.nodeCh
+	structNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, structNode.Children, 2)
 }
 
@@ -235,9 +235,9 @@ func TestStructFields(t *testing.T) {
 	s.decompose(context.Background(), nil, reflect.ValueOf(dummyNode), "")
 	assert.Len(t, s.nodes, 3)
 
-	_ = <-s.nodeCh
-	_ = <-s.nodeCh
-	structNode := <-s.nodeCh
+	_ = <-s.nodeIDCh
+	_ = <-s.nodeIDCh
+	structNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, structNode.Fields, 2)
 	assert.Contains(t, structNode.Fields, "Exported")
 	assert.Contains(t, structNode.Fields, "nonExported")
@@ -253,9 +253,9 @@ func TestDecompositionSimpleMap(t *testing.T) {
 	s.decompose(context.Background(), nil, reflect.ValueOf(m), "")
 	assert.Len(t, s.nodes, 3)
 
-	kNode := <-s.nodeCh
+	kNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, kNode.Children, 0)
-	vNode := <-s.nodeCh
+	vNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, vNode.Children, 0)
 
 	// switch order for KV node if got type mismatch
@@ -263,7 +263,7 @@ func TestDecompositionSimpleMap(t *testing.T) {
 		kNode, vNode = vNode, kNode
 	}
 
-	mapNode := <-s.nodeCh
+	mapNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, mapNode.Children, 1)
 
 	assert.Len(t, s.maps, 1)
@@ -282,7 +282,7 @@ func TestDecompositionMapSimpleStruct(t *testing.T) {
 
 	var structNode, mapNode *Node
 	for {
-		n := <-s.nodeCh
+		n := s.Node(<-s.nodeIDCh)
 		switch n.Kind() {
 		case reflect.Struct:
 			structNode = n

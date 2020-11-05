@@ -14,7 +14,7 @@ type Scanner struct {
 	lock      *sync.Mutex
 	wg        *sync.WaitGroup
 	parallism int
-	nodeCh    chan *Node
+	nodeIDCh  chan NodeID
 
 	// scanned results, all nodes that has been scanned
 	nodes map[NodeID]*Node
@@ -46,7 +46,7 @@ func NewScanner(ctx context.Context) *Scanner {
 		ctx:       ctx,
 		lock:      &sync.Mutex{},
 		wg:        &sync.WaitGroup{},
-		nodeCh:    make(chan *Node),
+		nodeIDCh:  make(chan NodeID),
 		nodes:     make(map[NodeID]*Node),
 		maps:      make(map[NodeID]map[NodeID]NodeID),
 		typeIdGen: getTypeID,
@@ -63,7 +63,7 @@ func NewScanner(ctx context.Context) *Scanner {
 // by default it's processed in serial
 func (s *Scanner) WithParallism(p int) *Scanner {
 	s.parallism = p
-	s.nodeCh = make(chan *Node, p)
+	s.nodeIDCh = make(chan NodeID, p)
 
 	return s
 }
@@ -172,7 +172,7 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value
 
 	// send the node that is decomposed completely
 	defer func() {
-		s.nodeCh <- node
+		s.nodeIDCh <- s.getNodeID(node)
 	}()
 
 	// check if user don't want to further break down the object
@@ -316,9 +316,9 @@ func (s *Scanner) registerKVPair(mid, kid, vid NodeID) {
 }
 
 // Scan starts the object decomposition process. It's a non-blocking operation.
-// It will return a channel of nodes and consumer can listen on the channel.
+// It will return a channel of node IDs and consumer can listen on the channel.
 // When all nodes are sent over the channel, it will be closed.
-func (s *Scanner) Scan(objs ...interface{}) <-chan *Node {
+func (s *Scanner) Scan(objs ...interface{}) <-chan NodeID {
 	wg := &sync.WaitGroup{}
 	wg.Add(len(objs))
 	for _, obj := range objs {
@@ -328,11 +328,11 @@ func (s *Scanner) Scan(objs ...interface{}) <-chan *Node {
 		}(obj)
 	}
 	go func() {
-		defer close(s.nodeCh)
+		defer close(s.nodeIDCh)
 		// when all routines finished, close the channel
 		wg.Wait()
 	}()
-	return s.nodeCh
+	return s.nodeIDCh
 }
 
 // Nodes returns the scanned nodes map maintained by the scanner
@@ -343,4 +343,9 @@ func (s *Scanner) Nodes() map[NodeID]*Node {
 // Maps returns the scanned KV pairs stored for maps maintained by the scanner
 func (s *Scanner) Maps() map[NodeID]map[NodeID]NodeID {
 	return s.maps
+}
+
+// Node returns the Node object based on ID
+func (s *Scanner) Node(id NodeID) *Node {
+	return s.nodes[id]
 }
