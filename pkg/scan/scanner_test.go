@@ -258,10 +258,16 @@ func TestDecompositionSimpleMap(t *testing.T) {
 	vNode := <-s.nodeCh
 	assert.Len(t, vNode.Children, 0)
 
+	// switch order for KV node if got type mismatch
+	if s.getNodeID(kNode).typeStr != "/string/string" {
+		kNode, vNode = vNode, kNode
+	}
+
 	mapNode := <-s.nodeCh
 	assert.Len(t, mapNode.Children, 1)
 
 	assert.Len(t, s.maps, 1)
+	assert.Len(t, s.maps[s.getNodeID(mapNode)], 1)
 	assert.Equal(t, s.getNodeID(vNode), s.maps[s.getNodeID(mapNode)][s.getNodeID(kNode)])
 }
 
