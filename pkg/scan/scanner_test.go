@@ -349,6 +349,28 @@ func TestLinkedList(t *testing.T) {
 	assert.Len(t, s1.nodes, 6)
 }
 
+func TestContextCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	s := NewScanner(ctx)
+	// channel should be blocked on the first node ID
+	c := s.Scan("foo", "bar", "deadbeef")
+	// before the first node ID got fetched from the channel, cancel the job
+	// no further node ID should be fetched after the first one
+	cancel()
+
+	select {
+	// #1: should never be able to fetch from channel as it should
+	// have been closed as of cancel
+	case _, ok := <-c:
+		assert.True(t, ok)
+		assert.FailNow(t, "should have never hit this")
+	// #2: 2nd fetch should fail
+	default:
+		return
+	}
+	assert.FailNow(t, "should have never hit this either")
+}
+
 func TestScannerNodes(t *testing.T) {
 	s := NewScanner(nil)
 	_ = s.Scan(nil)

@@ -170,9 +170,17 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value
 		return
 	}
 
+	// fork context
+	ctx, cancel := context.WithCancel(ctx)
 	// send the node that is decomposed completely
 	defer func() {
-		s.nodeIDCh <- s.getNodeID(node)
+		select {
+		case s.nodeIDCh <- s.getNodeID(node):
+		case <-ctx.Done():
+			return
+		default:
+			cancel()
+		}
 	}()
 
 	// check if user don't want to further break down the object
