@@ -63,11 +63,17 @@ func labelPrimitive(id scan.NodeID) string {
 	return fmt.Sprintf("<%s> %s", id.Hash(), id.String())
 }
 
+// wrapAttr is the helper to wrap an attribute as a string
+// this should be applied as the out-most wrapper for each attribute
+func wrapAttr(attrStr string) string {
+	return fmt.Sprintf("\"%s\"", attrStr)
+}
+
 func (p *primitiveProcessor) Process(g *GraphInfo, id scan.NodeID) {
 	idHash := id.Hash()
 
 	attr := map[string]string{}
 	setRecord(attr)
-	attr["label"] = labelPrimitive(id)
+	attr["label"] = wrapAttr(labelPrimitive(id))
 	g.Graph.AddNode(g.Name, idHash, attr)
 }
