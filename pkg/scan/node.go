@@ -95,9 +95,9 @@ func (n *Node) RegisterField(fieldName string, id NodeID) {
 	n.Fields[fieldName] = id
 }
 
-// String returns the string representation of the NodeID object
+// string returns the string representation of the NodeID object
 // It supposed to be unique among for each node ID
-func (nid *NodeID) String() string {
+func (nid *NodeID) string() string {
 	return fmt.Sprintf("%s.%#v", nid.typeStr, nid.value)
 }
 
@@ -110,5 +110,15 @@ func hash(s string) uint32 {
 // Hash returns the hash version of NodeID identifier
 // It supposed to be unique among for each node ID
 func (nid *NodeID) Hash() string {
-	return fmt.Sprintf("%d", hash(nid.String()))
+	return fmt.Sprintf("%d", hash(nid.string()))
+}
+
+// String returns the string representation of NodeID identifier
+func (nid *NodeID) String() string {
+	return fmt.Sprintf("%v", nid.value)
+}
+
+// IsNil returns true if the node ID is for a nil object
+func (nid *NodeID) IsNil() bool {
+	return nid.typeStr == "nil"
 }

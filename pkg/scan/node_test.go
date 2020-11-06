@@ -55,13 +55,13 @@ func TestRegisterChild(t *testing.T) {
 func TestNilNodeIDString(t *testing.T) {
 	nilNode := NewNode(reflect.ValueOf(nil))
 	nilNodeID := nilNode.NodeID(getTypeID)
-	assert.Equal(t, "nil.<invalid reflect.Value>", nilNodeID.String())
+	assert.Equal(t, "nil.<invalid reflect.Value>", nilNodeID.string())
 }
 
 func TestPrimitiveNodeIDString(t *testing.T) {
 	intNode := NewNode(reflect.ValueOf(100))
 	intNodeID := intNode.NodeID(getTypeID)
-	assert.Equal(t, "/int/int.100", intNodeID.String())
+	assert.Equal(t, "/int/int.100", intNodeID.string())
 }
 
 type nodeTestStruct struct {
@@ -73,7 +73,7 @@ func TestStructNodeIDString(t *testing.T) {
 	tn := nodeTestStruct{field1: 1, field2: 2}
 	nilNode := NewNode(reflect.ValueOf(tn))
 	nilNodeID := nilNode.NodeID(getTypeID)
-	assert.Equal(t, "github.com/hanlins/objscan/pkg/scan/nodeTestStruct/scan.nodeTestStruct.scan.nodeTestStruct{field1:1, field2:2}", nilNodeID.String())
+	assert.Equal(t, "github.com/hanlins/objscan/pkg/scan/nodeTestStruct/scan.nodeTestStruct.scan.nodeTestStruct{field1:1, field2:2}", nilNodeID.string())
 }
 
 func TestNodeIDHash(t *testing.T) {
@@ -81,4 +81,23 @@ func TestNodeIDHash(t *testing.T) {
 	nilNodeID := nilNode.NodeID(getTypeID)
 	assert.Equal(t, "2951924275", nilNodeID.Hash())
 
+}
+
+func TestNodeIDStringValue(t *testing.T) {
+	intNode := NewNode(reflect.ValueOf(100))
+	intNodeID := intNode.NodeID(getTypeID)
+	assert.Equal(t, "100", intNodeID.String())
+}
+
+func TestNodeIDIsNil(t *testing.T) {
+	nilNode := NewNode(reflect.ValueOf(nil))
+	nilNodeID := nilNode.NodeID(getTypeID)
+	assert.True(t, nilNodeID.IsNil())
+
+	// pointer pointing to a nil value should not be nil
+	// as itself is an variable
+	var ptr *Node
+	nilPtrNode := NewNode(reflect.ValueOf(ptr))
+	nilPtrNodeID := nilPtrNode.NodeID(getTypeID)
+	assert.False(t, nilPtrNodeID.IsNil())
 }
