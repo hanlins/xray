@@ -170,16 +170,12 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value
 		return
 	}
 
-	// fork context
-	ctx, cancel := context.WithCancel(ctx)
 	// send the node that is decomposed completely
 	defer func() {
 		select {
 		case s.nodeIDCh <- s.getNodeID(node):
 		case <-ctx.Done():
 			return
-		default:
-			cancel()
 		}
 	}()
 
@@ -216,8 +212,8 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value
 			break
 		}
 		go func() {
+			defer wg.Done()
 			s.decompose(ctx, node, node.InferPtr(), "")
-			wg.Done()
 		}()
 	case reflect.Array, reflect.Slice:
 		s.handleArray(ctx, wg, node)
@@ -237,15 +233,15 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value
 }
 
 func (s *Scanner) handleArray(ctx context.Context, wg *sync.WaitGroup, node *Node) {
+	defer wg.Done()
 	for i := 0; i < node.value.Len(); i++ {
 		obj := node.value.Index(i)
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			s.decompose(ctx, node, obj, "")
-			wg.Done()
 		}()
 	}
-	wg.Done()
 }
 
 func (s *Scanner) handleMap(ctx context.Context, wg *sync.WaitGroup, node *Node) {
@@ -255,15 +251,15 @@ func (s *Scanner) handleMap(ctx context.Context, wg *sync.WaitGroup, node *Node)
 		// notice: only mark key as map's children
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			s.decompose(ctx, node, keyVal, "")
-			wg.Done()
 			// signal key complete
 			ctlCh <- 1
 		}()
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			s.decompose(ctx, nil, valVal, "")
-			wg.Done()
 			// signal val complete
 			ctlCh <- 2
 		}()
@@ -302,6 +298,7 @@ func (s *Scanner) handleMap(ctx context.Context, wg *sync.WaitGroup, node *Node)
 }
 
 func (s *Scanner) handleStruct(ctx context.Context, wg *sync.WaitGroup, node *Node) {
+	defer wg.Done()
 	for i := 0; i < node.value.NumField(); i++ {
 		field := node.value.Field(i)
 		fieldName := node.value.Type().Field(i).Name
@@ -311,7 +308,6 @@ func (s *Scanner) handleStruct(ctx context.Context, wg *sync.WaitGroup, node *No
 			s.decompose(ctx, node, field, fieldName)
 		}(fieldName)
 	}
-	wg.Done()
 }
 
 // registerKVPair assumps the environment is locked
