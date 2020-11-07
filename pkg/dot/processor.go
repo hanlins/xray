@@ -9,6 +9,7 @@ import (
 
 const (
 	GraphName = "G"
+	Label     = "label"
 )
 
 type GraphInfo struct {
@@ -74,6 +75,23 @@ func (p *primitiveProcessor) Process(g *GraphInfo, id scan.NodeID) {
 
 	attr := map[string]string{}
 	setRecord(attr)
-	attr["label"] = wrapAttr(labelPrimitive(id))
+	attr[Label] = wrapAttr(labelPrimitive(id))
 	g.Graph.AddNode(g.Name, idHash, attr)
+}
+
+type ptrProcessor struct{}
+
+func labelPointer(id scan.NodeID) string {
+	return id.Type()
+}
+
+func (p *ptrProcessor) Process(g *GraphInfo, id scan.NodeID) {
+	idHash := id.Hash()
+
+	attr := map[string]string{}
+	attr[Label] = wrapAttr(labelPointer(id))
+	g.Graph.AddNode(g.Name, idHash, attr)
+	for childId, _ := range g.Nodes[id].Children {
+		g.Graph.AddEdge(idHash, childId.Hash(), true, map[string]string{"style": "dashed"})
+	}
 }

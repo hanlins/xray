@@ -122,3 +122,9 @@ func (nid *NodeID) String() string {
 func (nid *NodeID) IsNil() bool {
 	return nid.typeStr == "nil"
 }
+
+// Type is used to return the human readable name of the type
+// Assuming Node value is not nil for this ID
+func (nid *NodeID) Type() string {
+	return nid.value.Type().String()
+}
