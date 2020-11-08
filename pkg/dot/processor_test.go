@@ -105,3 +105,32 @@ func TestRenderEmpty(t *testing.T) {
 	assert.Len(t, p.graph.Relations.ChildToParents, 0)
 	assert.NoError(t, err)
 }
+
+func TestRender(t *testing.T) {
+	p := newProcessor()
+	id1 := getObjNodeID(100)
+	id2 := getObjNodeID("foo")
+	id3 := getObjNodeID("bar")
+	// add simple nodes
+	p.setNodeRef(id1, id1.Hash())
+	p.registerNode(id1, nil, nil)
+	p.setNodeRef(id2, id2.Hash())
+	p.registerNode(id2, nil, nil)
+	p.setNodeRef(id3, id3.Hash())
+	p.registerNode(id3, nil, nil)
+	p.registerEdge(id1, id3, nil)
+	// overwrite id1, add it as child as id2
+	p.registerSubgraph(id2, nil)
+	p.setNodeRef(id1, "node1")
+	p.registerNode(id1, &id2, nil)
+	err := p.render()
+
+	assert.NoError(t, err)
+	assert.NotNil(t, p.graph.Nodes)
+	assert.Len(t, p.graph.Nodes.Nodes, 3)
+	assert.NotNil(t, p.graph.Edges)
+	assert.Len(t, p.graph.Edges.Edges, 1)
+	assert.Equal(t, "node1", p.graph.Edges.Edges[0].Src)
+	assert.NotNil(t, p.graph.SubGraphs)
+	assert.Len(t, p.graph.SubGraphs.SubGraphs, 1)
+}

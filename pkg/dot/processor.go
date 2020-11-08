@@ -1,6 +1,7 @@
 package dot
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/awalterschulze/gographviz"
@@ -126,7 +127,15 @@ func (p *processor) render() error {
 	}
 	// add edges
 	for ep, attr := range p.edges {
-		err := p.graph.AddEdge(ep.src.Hash(), ep.dst.Hash(), true, attr)
+		srcRef, exist := p.nodeRef[ep.src]
+		if !exist {
+			return fmt.Errorf("failed to find node reference for src '%#v'", ep.src)
+		}
+		dstRef, exist := p.nodeRef[ep.src]
+		if !exist {
+			return fmt.Errorf("failed to find node reference for dst '%#v'", ep.dst)
+		}
+		err := p.graph.AddEdge(srcRef, dstRef, true, attr)
 		if err != nil {
 			return err
 		}
