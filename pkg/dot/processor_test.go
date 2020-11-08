@@ -1,109 +1,107 @@
 package dot
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
 
-	"github.com/awalterschulze/gographviz"
 	"github.com/hanlins/objscan/pkg/scan"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewGraphInfo(t *testing.T) {
-	s := scan.NewScanner(nil)
-	nodeCh := s.Scan(100)
-	_ = <-nodeCh
+func TestNewProcessor(t *testing.T) {
+	p := newProcessor()
 
-	gi := NewGraphInfo(s, "")
-	assert.Len(t, gi.Nodes, 1)
-	assert.Len(t, gi.Maps, 0)
-	assert.NotNil(t, gi.Graph)
-	assert.Equal(t, GraphName, gi.Name)
-	assert.Equal(t, GraphName, gi.Graph.Name)
+	assert.NotNil(t, p)
+	assert.NotNil(t, p.lock)
+	assert.NotNil(t, p.nodeRef)
+	assert.NotNil(t, p.nodes)
+	assert.NotNil(t, p.edges)
+	assert.NotNil(t, p.subgraphs)
+	assert.NotNil(t, p.graph)
+	assert.Equal(t, GraphName, p.name)
+	assert.Len(t, p.nodeRef, 0)
+	assert.Len(t, p.nodes, 0)
+	assert.Len(t, p.edges, 0)
+	assert.Len(t, p.subgraphs, 0)
 }
 
-func TestGraphWithName(t *testing.T) {
-	s := scan.NewScanner(nil)
-	nodeCh := s.Scan(100)
-	_ = <-nodeCh
-
-	customName := "deadbeef"
-	gi := NewGraphInfo(s, customName)
-	assert.Equal(t, customName, gi.Name)
-	assert.Equal(t, customName, gi.Graph.Name)
+// getTypeID returns the unique identifier for the type
+func getTypeID(t reflect.Type) string {
+	return fmt.Sprintf("%s/%s/%s", t.PkgPath(), t.Name(), t.String())
 }
 
-func TestPrimitiveLabel(t *testing.T) {
-	s := scan.NewScanner(nil)
-	nodeCh := s.Scan(100)
-	intId := <-nodeCh
-
-	assert.Regexp(t, "<*> 100", labelPrimitive(intId))
+// getObjNodeID returns the ID for an non-nil object
+func getObjNodeID(obj interface{}) scan.NodeID {
+	node := scan.NewNode(reflect.ValueOf(obj))
+	return node.NodeID(getTypeID)
 }
 
-func validateGraph(g *gographviz.Graph) error {
-	_, err := gographviz.ParseString(g.String())
-	return err
+func TestRegisterNodeReference(t *testing.T) {
+	p := newProcessor()
+	id1 := getObjNodeID(100)
+	p.setNodeRef(id1, id1.Hash())
+
+	assert.Len(t, p.nodeRef, 1)
+	assert.Equal(t, id1.Hash(), p.nodeRef[id1])
+	// update node reference
+	p.setNodeRef(id1, "deadbeef")
+	assert.Len(t, p.nodeRef, 1)
+	assert.Equal(t, "deadbeef", p.nodeRef[id1])
 }
 
-func TestProcessPrimitive(t *testing.T) {
-	s := scan.NewScanner(nil)
-	nodeCh := s.Scan(100)
-	nid, ok := <-nodeCh
-	assert.True(t, ok)
+func TestRegisterNode(t *testing.T) {
+	p := newProcessor()
+	id1 := getObjNodeID(100)
+	id2 := getObjNodeID("deadbeef")
 
-	gi := NewGraphInfo(s, "")
-	p := &primitiveProcessor{}
-	p.Process(gi, nid)
-	assert.NotNil(t, gi.Graph)
-	assert.True(t, gi.Graph.Directed)
-	assert.False(t, gi.Graph.Strict)
-	assert.NotNil(t, gi.Graph.Nodes)
-	assert.Len(t, gi.Graph.Nodes.Nodes, 1)
-	assert.NotNil(t, gi.Graph.Edges)
-	assert.Len(t, gi.Graph.Edges.Edges, 0)
-	assert.NotNil(t, gi.Graph.SubGraphs)
-	assert.Len(t, gi.Graph.SubGraphs.SubGraphs, 0)
-	assert.NotNil(t, gi.Graph.Relations)
-	assert.Len(t, gi.Graph.Relations.ParentToChildren, 1)
-	assert.Len(t, gi.Graph.Relations.ChildToParents, 1)
-	assert.NoError(t, validateGraph(gi.Graph))
-
-	_, ok = <-nodeCh
-	assert.False(t, ok)
+	p.registerNode(id1, nil, map[string]string{"foo": "bar"})
+	assert.Len(t, p.nodes, 1)
+	assert.Equal(t, map[string]string{"foo": "bar"}, p.nodes[id1].attr)
+	p.registerNode(id2, &id1, nil)
+	assert.Len(t, p.nodes, 2)
 }
 
-func TestProcessPointer(t *testing.T) {
-	str := "deadbeef"
-	s := scan.NewScanner(nil)
-	nodeCh := s.Scan(&str)
-	gi := NewGraphInfo(s, "")
+func TestRegisterEdge(t *testing.T) {
+	p := newProcessor()
+	id1 := getObjNodeID(100)
+	id2 := getObjNodeID("foo")
+	p.registerEdge(id1, id2, nil)
 
-	sid, ok := <-nodeCh
-	assert.True(t, ok)
-	p1 := &primitiveProcessor{}
-	p1.Process(gi, sid)
+	assert.Len(t, p.edges, 1)
+	// re-registration won't take effect
+	p.registerEdge(id1, id2, nil)
+	assert.Len(t, p.edges, 1)
+}
 
-	pid, ok := <-nodeCh
-	assert.True(t, ok)
+func TestRegisterSubgraph(t *testing.T) {
+	p := newProcessor()
+	id1 := getObjNodeID(100)
+	id2 := getObjNodeID("foo")
+	p.registerEdge(id1, id2, nil)
 
-	p2 := &ptrProcessor{}
-	p2.Process(gi, pid)
+	assert.Len(t, p.edges, 1)
+	p.registerSubgraph(id1, &id2)
+	assert.Len(t, p.subgraphs, 1)
+	p.registerSubgraph(id2, nil)
+	assert.Len(t, p.subgraphs, 2)
+}
 
-	assert.NotNil(t, gi.Graph)
-	assert.True(t, gi.Graph.Directed)
-	assert.False(t, gi.Graph.Strict)
-	assert.NotNil(t, gi.Graph.Nodes)
-	assert.Len(t, gi.Graph.Nodes.Nodes, 2)
-	assert.NotNil(t, gi.Graph.Edges)
-	assert.Len(t, gi.Graph.Edges.Edges, 1)
-	assert.NotNil(t, gi.Graph.SubGraphs)
-	assert.Len(t, gi.Graph.SubGraphs.SubGraphs, 0)
-	assert.NotNil(t, gi.Graph.Relations)
-	assert.Len(t, gi.Graph.Relations.ParentToChildren, 1)
-	assert.Len(t, gi.Graph.Relations.ChildToParents, 2)
-	assert.NoError(t, validateGraph(gi.Graph))
+func TestRenderEmpty(t *testing.T) {
+	p := newProcessor()
+	err := p.render()
 
-	_, ok = <-nodeCh
-	assert.False(t, ok)
-
+	assert.Equal(t, GraphName, p.graph.Name)
+	assert.True(t, p.graph.Directed)
+	assert.False(t, p.graph.Strict)
+	assert.NotNil(t, p.graph.Nodes)
+	assert.Len(t, p.graph.Nodes.Nodes, 0)
+	assert.NotNil(t, p.graph.Edges)
+	assert.Len(t, p.graph.Edges.Edges, 0)
+	assert.NotNil(t, p.graph.SubGraphs)
+	assert.Len(t, p.graph.SubGraphs.SubGraphs, 0)
+	assert.NotNil(t, p.graph.Relations)
+	assert.Len(t, p.graph.Relations.ParentToChildren, 0)
+	assert.Len(t, p.graph.Relations.ChildToParents, 0)
+	assert.NoError(t, err)
 }
