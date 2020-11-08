@@ -13,23 +13,9 @@ func TestNewGraphInfo(t *testing.T) {
 	nodeCh := s.Scan(100)
 	_ = <-nodeCh
 
-	gi := NewGraphInfo(s, "")
+	gi := NewGraphInfo(s)
 	assert.Len(t, gi.Nodes, 1)
 	assert.Len(t, gi.Maps, 0)
-	assert.NotNil(t, gi.Graph)
-	assert.Equal(t, GraphName, gi.Name)
-	assert.Equal(t, GraphName, gi.Graph.Name)
-}
-
-func TestGraphWithName(t *testing.T) {
-	s := scan.NewScanner(nil)
-	nodeCh := s.Scan(100)
-	_ = <-nodeCh
-
-	customName := "deadbeef"
-	gi := NewGraphInfo(s, customName)
-	assert.Equal(t, customName, gi.Name)
-	assert.Equal(t, customName, gi.Graph.Name)
 }
 
 func TestPrimitiveLabel(t *testing.T) {
@@ -51,22 +37,23 @@ func TestProcessPrimitive(t *testing.T) {
 	nid, ok := <-nodeCh
 	assert.True(t, ok)
 
-	gi := NewGraphInfo(s, "")
-	p := &primitiveProcessor{}
+	gi := NewGraphInfo(s)
+	p := &DefaultHandler{*NewProcessor()}
 	p.Process(gi, nid)
-	assert.NotNil(t, gi.Graph)
-	assert.True(t, gi.Graph.Directed)
-	assert.False(t, gi.Graph.Strict)
-	assert.NotNil(t, gi.Graph.Nodes)
-	assert.Len(t, gi.Graph.Nodes.Nodes, 1)
-	assert.NotNil(t, gi.Graph.Edges)
-	assert.Len(t, gi.Graph.Edges.Edges, 0)
-	assert.NotNil(t, gi.Graph.SubGraphs)
-	assert.Len(t, gi.Graph.SubGraphs.SubGraphs, 0)
-	assert.NotNil(t, gi.Graph.Relations)
-	assert.Len(t, gi.Graph.Relations.ParentToChildren, 1)
-	assert.Len(t, gi.Graph.Relations.ChildToParents, 1)
-	assert.NoError(t, validateGraph(gi.Graph))
+	p.Render()
+	assert.NotNil(t, p.graph)
+	assert.True(t, p.graph.Directed)
+	assert.False(t, p.graph.Strict)
+	assert.NotNil(t, p.graph.Nodes)
+	assert.Len(t, p.graph.Nodes.Nodes, 1)
+	assert.NotNil(t, p.graph.Edges)
+	assert.Len(t, p.graph.Edges.Edges, 0)
+	assert.NotNil(t, p.graph.SubGraphs)
+	assert.Len(t, p.graph.SubGraphs.SubGraphs, 0)
+	assert.NotNil(t, p.graph.Relations)
+	assert.Len(t, p.graph.Relations.ParentToChildren, 1)
+	assert.Len(t, p.graph.Relations.ChildToParents, 1)
+	assert.NoError(t, validateGraph(p.graph))
 
 	_, ok = <-nodeCh
 	assert.False(t, ok)
@@ -76,32 +63,31 @@ func TestProcessPointer(t *testing.T) {
 	str := "deadbeef"
 	s := scan.NewScanner(nil)
 	nodeCh := s.Scan(&str)
-	gi := NewGraphInfo(s, "")
+	gi := NewGraphInfo(s)
+	p := &DefaultHandler{*NewProcessor()}
 
 	sid, ok := <-nodeCh
 	assert.True(t, ok)
-	p1 := &primitiveProcessor{}
-	p1.Process(gi, sid)
+	p.Process(gi, sid)
 
 	pid, ok := <-nodeCh
 	assert.True(t, ok)
+	p.Process(gi, pid)
+	p.Render()
 
-	p2 := &ptrProcessor{}
-	p2.Process(gi, pid)
-
-	assert.NotNil(t, gi.Graph)
-	assert.True(t, gi.Graph.Directed)
-	assert.False(t, gi.Graph.Strict)
-	assert.NotNil(t, gi.Graph.Nodes)
-	assert.Len(t, gi.Graph.Nodes.Nodes, 2)
-	assert.NotNil(t, gi.Graph.Edges)
-	assert.Len(t, gi.Graph.Edges.Edges, 1)
-	assert.NotNil(t, gi.Graph.SubGraphs)
-	assert.Len(t, gi.Graph.SubGraphs.SubGraphs, 0)
-	assert.NotNil(t, gi.Graph.Relations)
-	assert.Len(t, gi.Graph.Relations.ParentToChildren, 1)
-	assert.Len(t, gi.Graph.Relations.ChildToParents, 2)
-	assert.NoError(t, validateGraph(gi.Graph))
+	assert.NotNil(t, p.graph)
+	assert.True(t, p.graph.Directed)
+	assert.False(t, p.graph.Strict)
+	assert.NotNil(t, p.graph.Nodes)
+	assert.Len(t, p.graph.Nodes.Nodes, 2)
+	assert.NotNil(t, p.graph.Edges)
+	assert.Len(t, p.graph.Edges.Edges, 1)
+	assert.NotNil(t, p.graph.SubGraphs)
+	assert.Len(t, p.graph.SubGraphs.SubGraphs, 0)
+	assert.NotNil(t, p.graph.Relations)
+	assert.Len(t, p.graph.Relations.ParentToChildren, 1)
+	assert.Len(t, p.graph.Relations.ChildToParents, 2)
+	assert.NoError(t, validateGraph(p.graph))
 
 	_, ok = <-nodeCh
 	assert.False(t, ok)

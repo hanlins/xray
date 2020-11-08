@@ -47,6 +47,8 @@ type NodeInfo struct {
 type EdgePair struct {
 	src scan.NodeID
 	dst scan.NodeID
+
+	srcField string
 }
 
 // NewProcessor initiates a Processor instance
@@ -78,12 +80,20 @@ func (p *Processor) AddNode(node scan.NodeID, graph *scan.NodeID, attr map[strin
 	p.nodes[node] = NodeInfo{graph: graph, attr: attr}
 }
 
-// AddEdge registers an edge
-func (p *Processor) AddEdge(src, dst scan.NodeID, attr map[string]string) {
+// RemoverNode removes the node
+func (p *Processor) RemoveNode(node scan.NodeID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	ep := EdgePair{src: src, dst: dst}
+	delete(p.nodes, node)
+}
+
+// AddEdge registers an edge
+func (p *Processor) AddEdge(src, dst scan.NodeID, srcField string, attr map[string]string) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	ep := EdgePair{src: src, dst: dst, srcField: srcField}
 	p.edges[ep] = attr
 }
 
@@ -130,6 +140,9 @@ func (p *Processor) Render() error {
 		srcRef, exist := p.nodeRef[ep.src]
 		if !exist {
 			return fmt.Errorf("failed to find node reference for src '%#v'", ep.src)
+		}
+		if ep.srcField != "" {
+			srcRef = fmt.Sprintf("%s:%s", srcRef, ep.srcField)
 		}
 		dstRef, exist := p.nodeRef[ep.src]
 		if !exist {

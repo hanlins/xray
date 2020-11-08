@@ -66,11 +66,11 @@ func TestRegisterEdge(t *testing.T) {
 	p := NewProcessor()
 	id1 := getObjNodeID(100)
 	id2 := getObjNodeID("foo")
-	p.AddEdge(id1, id2, nil)
+	p.AddEdge(id1, id2, "", nil)
 
 	assert.Len(t, p.edges, 1)
 	// re-registration won't take effect
-	p.AddEdge(id1, id2, nil)
+	p.AddEdge(id1, id2, "", nil)
 	assert.Len(t, p.edges, 1)
 }
 
@@ -78,7 +78,7 @@ func TestRegisterSubgraph(t *testing.T) {
 	p := NewProcessor()
 	id1 := getObjNodeID(100)
 	id2 := getObjNodeID("foo")
-	p.AddEdge(id1, id2, nil)
+	p.AddEdge(id1, id2, "", nil)
 
 	assert.Len(t, p.edges, 1)
 	p.AddSubgraph(id1, &id2)
@@ -118,7 +118,7 @@ func TestRender(t *testing.T) {
 	p.AddNode(id2, nil, nil)
 	p.setNodeRef(id3, id3.Hash())
 	p.AddNode(id3, nil, nil)
-	p.AddEdge(id1, id3, nil)
+	p.AddEdge(id1, id3, "", nil)
 	// overwrite id1, add it as child as id2
 	p.AddSubgraph(id2, nil)
 	p.setNodeRef(id1, "node1")

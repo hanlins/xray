@@ -239,6 +239,7 @@ func (s *Scanner) handleArray(ctx context.Context, wg *sync.WaitGroup, node *Nod
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			// TODO: pass the index to the decomposition function
 			s.decompose(ctx, node, obj, "")
 		}()
 	}

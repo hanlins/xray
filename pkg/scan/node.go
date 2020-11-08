@@ -25,6 +25,9 @@ type Node struct {
 
 	// Fields is for structed object, field name will be mapped to a node ID
 	Fields map[string]NodeID
+
+	// Array is for array object, retains the order information for children
+	Array []NodeID
 }
 
 // NewNode initiates a new node for a given golang object
@@ -127,4 +130,33 @@ func (nid *NodeID) IsNil() bool {
 // Assuming Node value is not nil for this ID
 func (nid *NodeID) Type() string {
 	return nid.value.Type().String()
+}
+
+// Kind is used to return the kind of the node
+func (nid *NodeID) Kind() reflect.Kind {
+	return nid.value.Kind()
+}
+
+// IsPrimitive returns true if the id is of a primitive type
+func (nid *NodeID) IsPrimitive() bool {
+	switch nid.Kind() {
+	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16:
+		fallthrough
+	case reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8:
+		fallthrough
+	case reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		fallthrough
+	case reflect.Chan, reflect.String, reflect.UnsafePointer:
+		fallthrough
+	case reflect.Float32, reflect.Float64, reflect.Complex64:
+		fallthrough
+	case reflect.Complex128, reflect.Interface, reflect.Func:
+		return true
+	case reflect.Invalid:
+	case reflect.Ptr:
+	case reflect.Array, reflect.Slice:
+	case reflect.Map:
+	case reflect.Struct:
+	}
+	return false
 }
