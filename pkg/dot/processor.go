@@ -12,7 +12,7 @@ const (
 	GraphName = "G"
 )
 
-type processor struct {
+type Processor struct {
 	lock *sync.Mutex
 
 	// nodeRef keeps track of the ID to reference mapping
@@ -20,10 +20,10 @@ type processor struct {
 	// e.g. creating an edge
 	nodeRef map[scan.NodeID]string
 	// nodes stores the information to construct the node
-	nodes map[scan.NodeID]nodeInfo
+	nodes map[scan.NodeID]NodeInfo
 	// edges keeps track of the edges to be rendered
 	// key is the source->dst pair, value is the attribute of the edge
-	edges map[edgePair]map[string]string
+	edges map[EdgePair]map[string]string
 	// subgraphs keeps track of the subgraphs to be rendered
 	// key is the child graph and value is its parent
 	// if parent is nil then add the child to the default graph
@@ -35,60 +35,60 @@ type processor struct {
 	name string
 }
 
-// nodeInfo stores the necessary information to construct a node in dot format
+// NodeInfo stores the necessary information to construct a node in dot format
 // if graph points to nil then the node should be added to the outmost graph
-type nodeInfo struct {
+type NodeInfo struct {
 	graph *scan.NodeID
 	attr  map[string]string
 }
 
-// edgePair describes the source and desgination of an edge
+// EdgePair describes the source and desgination of an edge
 // it's also used to identify the edge
-type edgePair struct {
+type EdgePair struct {
 	src scan.NodeID
 	dst scan.NodeID
 }
 
-// newProcessor initiates a processor instance
-func newProcessor() *processor {
-	p := &processor{}
+// NewProcessor initiates a Processor instance
+func NewProcessor() *Processor {
+	p := &Processor{}
 	p.lock = &sync.Mutex{}
 	p.nodeRef = make(map[scan.NodeID]string)
-	p.nodes = make(map[scan.NodeID]nodeInfo)
-	p.edges = make(map[edgePair]map[string]string)
+	p.nodes = make(map[scan.NodeID]NodeInfo)
+	p.edges = make(map[EdgePair]map[string]string)
 	p.subgraphs = make(map[scan.NodeID]*scan.NodeID)
 	p.graph = gographviz.NewGraph()
 	p.name = GraphName
 	return p
 }
 
-// setNodeRef maps a node ID to its reference string
-func (p *processor) setNodeRef(id scan.NodeID, ref string) {
+// setnodeRef maps a node ID to its reference string
+func (p *Processor) setNodeRef(id scan.NodeID, ref string) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
 	p.nodeRef[id] = ref
 }
 
-// registerNode registers a node
-func (p *processor) registerNode(node scan.NodeID, graph *scan.NodeID, attr map[string]string) {
+// AddNode registers a node
+func (p *Processor) AddNode(node scan.NodeID, graph *scan.NodeID, attr map[string]string) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	p.nodes[node] = nodeInfo{graph: graph, attr: attr}
+	p.nodes[node] = NodeInfo{graph: graph, attr: attr}
 }
 
-// registerEdge registers an edge
-func (p *processor) registerEdge(src, dst scan.NodeID, attr map[string]string) {
+// AddEdge registers an edge
+func (p *Processor) AddEdge(src, dst scan.NodeID, attr map[string]string) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	ep := edgePair{src: src, dst: dst}
+	ep := EdgePair{src: src, dst: dst}
 	p.edges[ep] = attr
 }
 
-// registerSubgraph registers an subgraph
-func (p *processor) registerSubgraph(child scan.NodeID, parent *scan.NodeID) {
+// AddSubgraph registers an subgraph
+func (p *Processor) AddSubgraph(child scan.NodeID, parent *scan.NodeID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -96,15 +96,15 @@ func (p *processor) registerSubgraph(child scan.NodeID, parent *scan.NodeID) {
 }
 
 // getParentGraph returns the name of the parent graph
-func (p *processor) getParentGraph(parent *scan.NodeID) string {
+func (p *Processor) getParentGraph(parent *scan.NodeID) string {
 	if parent != nil {
 		return parent.Hash()
 	}
 	return p.name
 }
 
-// render add the observed graph objects to the current graph
-func (p *processor) render() error {
+// Render add the observed graph objects to the current graph
+func (p *Processor) Render() error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 

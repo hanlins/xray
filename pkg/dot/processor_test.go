@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewProcessor(t *testing.T) {
-	p := newProcessor()
+	p := NewProcessor()
 
 	assert.NotNil(t, p)
 	assert.NotNil(t, p.lock)
@@ -38,7 +38,7 @@ func getObjNodeID(obj interface{}) scan.NodeID {
 }
 
 func TestRegisterNodeReference(t *testing.T) {
-	p := newProcessor()
+	p := NewProcessor()
 	id1 := getObjNodeID(100)
 	p.setNodeRef(id1, id1.Hash())
 
@@ -51,45 +51,45 @@ func TestRegisterNodeReference(t *testing.T) {
 }
 
 func TestRegisterNode(t *testing.T) {
-	p := newProcessor()
+	p := NewProcessor()
 	id1 := getObjNodeID(100)
 	id2 := getObjNodeID("deadbeef")
 
-	p.registerNode(id1, nil, map[string]string{"foo": "bar"})
+	p.AddNode(id1, nil, map[string]string{"foo": "bar"})
 	assert.Len(t, p.nodes, 1)
 	assert.Equal(t, map[string]string{"foo": "bar"}, p.nodes[id1].attr)
-	p.registerNode(id2, &id1, nil)
+	p.AddNode(id2, &id1, nil)
 	assert.Len(t, p.nodes, 2)
 }
 
 func TestRegisterEdge(t *testing.T) {
-	p := newProcessor()
+	p := NewProcessor()
 	id1 := getObjNodeID(100)
 	id2 := getObjNodeID("foo")
-	p.registerEdge(id1, id2, nil)
+	p.AddEdge(id1, id2, nil)
 
 	assert.Len(t, p.edges, 1)
 	// re-registration won't take effect
-	p.registerEdge(id1, id2, nil)
+	p.AddEdge(id1, id2, nil)
 	assert.Len(t, p.edges, 1)
 }
 
 func TestRegisterSubgraph(t *testing.T) {
-	p := newProcessor()
+	p := NewProcessor()
 	id1 := getObjNodeID(100)
 	id2 := getObjNodeID("foo")
-	p.registerEdge(id1, id2, nil)
+	p.AddEdge(id1, id2, nil)
 
 	assert.Len(t, p.edges, 1)
-	p.registerSubgraph(id1, &id2)
+	p.AddSubgraph(id1, &id2)
 	assert.Len(t, p.subgraphs, 1)
-	p.registerSubgraph(id2, nil)
+	p.AddSubgraph(id2, nil)
 	assert.Len(t, p.subgraphs, 2)
 }
 
 func TestRenderEmpty(t *testing.T) {
-	p := newProcessor()
-	err := p.render()
+	p := NewProcessor()
+	err := p.Render()
 
 	assert.Equal(t, GraphName, p.graph.Name)
 	assert.True(t, p.graph.Directed)
@@ -107,23 +107,23 @@ func TestRenderEmpty(t *testing.T) {
 }
 
 func TestRender(t *testing.T) {
-	p := newProcessor()
+	p := NewProcessor()
 	id1 := getObjNodeID(100)
 	id2 := getObjNodeID("foo")
 	id3 := getObjNodeID("bar")
 	// add simple nodes
 	p.setNodeRef(id1, id1.Hash())
-	p.registerNode(id1, nil, nil)
+	p.AddNode(id1, nil, nil)
 	p.setNodeRef(id2, id2.Hash())
-	p.registerNode(id2, nil, nil)
+	p.AddNode(id2, nil, nil)
 	p.setNodeRef(id3, id3.Hash())
-	p.registerNode(id3, nil, nil)
-	p.registerEdge(id1, id3, nil)
+	p.AddNode(id3, nil, nil)
+	p.AddEdge(id1, id3, nil)
 	// overwrite id1, add it as child as id2
-	p.registerSubgraph(id2, nil)
+	p.AddSubgraph(id2, nil)
 	p.setNodeRef(id1, "node1")
-	p.registerNode(id1, &id2, nil)
-	err := p.render()
+	p.AddNode(id1, &id2, nil)
+	err := p.Render()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, p.graph.Nodes)
