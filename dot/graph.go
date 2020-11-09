@@ -53,7 +53,11 @@ func addAttr(attr map[string]string, key, value string) map[string]string {
 }
 
 func labelPrimitive(id xray.NodeID) string {
-	return fmt.Sprintf("<%s> %s", id.Hash(), id.String())
+	return fmt.Sprintf("<%s>%s", id.Hash(), id.String())
+}
+
+func labelPrimitiveWithField(id xray.NodeID, field string) string {
+	return fmt.Sprintf("<%s>%s: %s", id.Hash(), field, id.String())
 }
 
 // wrapAttr is the helper to wrap an attribute as a string
@@ -158,14 +162,19 @@ func (p *DefaultHandler) handleStruct(g *GraphInfo, id xray.NodeID) {
 
 	fields := []string{}
 	for fieldName, field := range g.Nodes[id].Fields {
-		if !field.IsPrimitive() {
+		if !field.IsPrimitive() && field.Kind() != reflect.Ptr {
 			p.AddEdge(id, field, fieldName, nil)
 			fields = append(fields, fmt.Sprintf("<%s>%s", fieldName, fieldName))
 			continue
 		}
 		// merge primitive type objects
 		p.setNodeRef(field, fmt.Sprintf("%s:%s", id.Hash(), field.Hash()))
-		fields = append(fields, labelPrimitive(field))
+		if field.Kind() == reflect.Ptr {
+			fields = append(fields, fmt.Sprintf("{%s|<%s>%s}", fieldName, field.Hash(), field.Type()))
+		} else {
+			fields = append(fields, labelPrimitiveWithField(field, fieldName))
+		}
+		// fields = append(fields, labelPrimitiveWithField(field, fieldName))
 		// remove prev nodes
 		p.RemoveNode(field)
 	}
