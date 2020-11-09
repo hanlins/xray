@@ -35,6 +35,15 @@ type Scanner struct {
 	errHandler func(error)
 }
 
+// decomposeMeta contains the metadata for decomposing an object
+// it stores the object's relation with its parent. e.g. it's a field of its
+// parent object or it's an element of an array
+// if object is independent of its parent, should pass an nil meta on decompose
+type decomposeMeta struct {
+	fieldName string
+	index     int
+}
+
 // getTypeID returns the unique identifier for the type
 func getTypeID(t reflect.Type) string {
 	return fmt.Sprintf("%s/%s/%s", t.PkgPath(), t.Name(), t.String())
@@ -142,7 +151,7 @@ func (s *Scanner) getNodeID(node *Node) NodeID {
 // decompose breaks the given interface down
 // decompose will block until the object and its underlying elements are all
 // scanned
-func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value, fieldName string) {
+func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value, meta *decomposeMeta) {
 	node := NewNode(obj)
 
 	// ignore the filtered nodes
@@ -161,8 +170,8 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value
 		defer parent.RegisterChild(node, s.typeIdGen)
 	}
 	// register node itself as its parent's field
-	if parent != nil && fieldName != "" && parent.Kind() == reflect.Struct {
-		defer parent.RegisterField(fieldName, s.getNodeID(node))
+	if parent != nil && meta != nil {
+		defer parent.registerMeta(meta, s.getNodeID(node))
 	}
 
 	// skip decomposition as the node has already been decomposed
@@ -213,7 +222,7 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value
 		}
 		go func() {
 			defer wg.Done()
-			s.decompose(ctx, node, node.InferPtr(), "")
+			s.decompose(ctx, node, node.InferPtr(), nil)
 		}()
 	case reflect.Array, reflect.Slice:
 		s.handleArray(ctx, wg, node)
@@ -234,14 +243,14 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value
 
 func (s *Scanner) handleArray(ctx context.Context, wg *sync.WaitGroup, node *Node) {
 	defer wg.Done()
+	node.Array = make([]NodeID, node.value.Len())
 	for i := 0; i < node.value.Len(); i++ {
 		obj := node.value.Index(i)
 		wg.Add(1)
-		go func() {
+		go func(index int) {
 			defer wg.Done()
-			// TODO: pass the index to the decomposition function
-			s.decompose(ctx, node, obj, "")
-		}()
+			s.decompose(ctx, node, obj, &decomposeMeta{index: index})
+		}(i)
 	}
 }
 
@@ -253,14 +262,14 @@ func (s *Scanner) handleMap(ctx context.Context, wg *sync.WaitGroup, node *Node)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			s.decompose(ctx, node, keyVal, "")
+			s.decompose(ctx, node, keyVal, nil)
 			// signal key complete
 			ctlCh <- 1
 		}()
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			s.decompose(ctx, nil, valVal, "")
+			s.decompose(ctx, nil, valVal, nil)
 			// signal val complete
 			ctlCh <- 2
 		}()
@@ -306,7 +315,7 @@ func (s *Scanner) handleStruct(ctx context.Context, wg *sync.WaitGroup, node *No
 		wg.Add(1)
 		go func(fieldName string) {
 			defer wg.Done()
-			s.decompose(ctx, node, field, fieldName)
+			s.decompose(ctx, node, field, &decomposeMeta{fieldName: fieldName})
 		}(fieldName)
 	}
 }
@@ -329,7 +338,7 @@ func (s *Scanner) Scan(objs ...interface{}) <-chan NodeID {
 	for _, obj := range objs {
 		go func(obj interface{}) {
 			defer wg.Done()
-			s.decompose(s.ctx, nil, reflect.ValueOf(obj), "")
+			s.decompose(s.ctx, nil, reflect.ValueOf(obj), nil)
 		}(obj)
 	}
 	go func() {

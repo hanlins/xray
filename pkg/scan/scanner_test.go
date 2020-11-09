@@ -102,10 +102,10 @@ func TestAcceptNode(t *testing.T) {
 func TestDecomposePrimitives(t *testing.T) {
 	s := NewScanner(nil).WithParallism(4)
 
-	s.decompose(context.Background(), nil, reflect.ValueOf(1), "")
-	s.decompose(context.Background(), nil, reflect.ValueOf(true), "")
-	s.decompose(context.Background(), nil, reflect.ValueOf("test"), "")
-	s.decompose(context.Background(), nil, reflect.ValueOf(nil), "")
+	s.decompose(context.Background(), nil, reflect.ValueOf(1), nil)
+	s.decompose(context.Background(), nil, reflect.ValueOf(true), nil)
+	s.decompose(context.Background(), nil, reflect.ValueOf("test"), nil)
+	s.decompose(context.Background(), nil, reflect.ValueOf(nil), nil)
 
 	// should store all primitives
 	assert.Len(t, s.nodes, 4)
@@ -125,7 +125,7 @@ func TestDecomposeInterface(t *testing.T) {
 	s := NewScanner(nil).WithParallism(1)
 
 	func(iface interface{}) {
-		s.decompose(context.Background(), nil, reflect.ValueOf(iface), "")
+		s.decompose(context.Background(), nil, reflect.ValueOf(iface), nil)
 	}("fake obj")
 
 	ifaceNode := s.Node(<-s.nodeIDCh)
@@ -143,7 +143,7 @@ func TestDecomposeInterfaceStruct(t *testing.T) {
 	s := NewScanner(nil).WithParallism(4)
 
 	func(iface interface{}) {
-		s.decompose(context.Background(), nil, reflect.ValueOf(iface), "")
+		s.decompose(context.Background(), nil, reflect.ValueOf(iface), nil)
 	}(&dummyNode)
 
 	assert.Len(t, s.nodes, 4)
@@ -163,11 +163,11 @@ func TestDecomposePtr(t *testing.T) {
 	strPtr2 := &str
 	s := NewScanner(nil).WithParallism(2)
 
-	s.decompose(context.Background(), nil, reflect.ValueOf(strPtr1), "")
+	s.decompose(context.Background(), nil, reflect.ValueOf(strPtr1), nil)
 	assert.Len(t, s.nodes, 2)
 
 	// same pointer is stored only once
-	s.decompose(context.Background(), nil, reflect.ValueOf(strPtr2), "")
+	s.decompose(context.Background(), nil, reflect.ValueOf(strPtr2), nil)
 	assert.Len(t, s.nodes, 2)
 
 	// string should has no children
@@ -183,7 +183,7 @@ func TestDecomposerSimpleArray(t *testing.T) {
 	arr := []int{1, 2, 3}
 	s := NewScanner(nil).WithParallism(4)
 
-	s.decompose(context.Background(), nil, reflect.ValueOf(arr), "")
+	s.decompose(context.Background(), nil, reflect.ValueOf(arr), nil)
 	assert.Len(t, s.nodes, 4)
 
 	_ = <-s.nodeIDCh
@@ -193,6 +193,11 @@ func TestDecomposerSimpleArray(t *testing.T) {
 	// array node should have 3 children
 	arrNode := s.Node(<-s.nodeIDCh)
 	assert.Len(t, arrNode.Children, 3)
+	assert.Len(t, arrNode.Array, 3)
+	// check array element by order
+	assert.Equal(t, 1, int(arrNode.Array[0].value.Int()))
+	assert.Equal(t, 2, int(arrNode.Array[1].value.Int()))
+	assert.Equal(t, 3, int(arrNode.Array[2].value.Int()))
 }
 
 type testStruct struct {
@@ -208,7 +213,7 @@ func TestDecomposeSimpleStruct(t *testing.T) {
 
 	s := NewScanner(nil).WithParallism(5)
 
-	s.decompose(context.Background(), nil, reflect.ValueOf(dummyNode), "")
+	s.decompose(context.Background(), nil, reflect.ValueOf(dummyNode), nil)
 	assert.Len(t, s.nodes, 3)
 
 	// exported int node should has no children
@@ -232,7 +237,7 @@ func TestStructFields(t *testing.T) {
 
 	s := NewScanner(nil).WithParallism(5)
 
-	s.decompose(context.Background(), nil, reflect.ValueOf(dummyNode), "")
+	s.decompose(context.Background(), nil, reflect.ValueOf(dummyNode), nil)
 	assert.Len(t, s.nodes, 3)
 
 	_ = <-s.nodeIDCh
@@ -250,7 +255,7 @@ func TestDecompositionSimpleMap(t *testing.T) {
 	m["foo"] = 1
 	s := NewScanner(nil).WithParallism(3)
 
-	s.decompose(context.Background(), nil, reflect.ValueOf(m), "")
+	s.decompose(context.Background(), nil, reflect.ValueOf(m), nil)
 	assert.Len(t, s.nodes, 3)
 
 	kNode := s.Node(<-s.nodeIDCh)
@@ -283,17 +288,17 @@ func TestDecompositionMultiMapSameValue(t *testing.T) {
 	s := NewScanner(nil).WithParallism(6)
 
 	// add "foo", ptr to "bar", "bar" and the map
-	s.decompose(context.Background(), nil, reflect.ValueOf(m1), "")
+	s.decompose(context.Background(), nil, reflect.ValueOf(m1), nil)
 	assert.Len(t, s.nodes, 4)
 	// add new map m2 and another instance of "foo"
 	// pointer and bar are shared
-	s.decompose(context.Background(), nil, reflect.ValueOf(m2), "")
+	s.decompose(context.Background(), nil, reflect.ValueOf(m2), nil)
 	assert.Len(t, s.nodes, 4+2)
 
 	// if just shallow copy the map, should not add anything as the map
 	// itself is also a reference
 	m3 := m1
-	s.decompose(context.Background(), nil, reflect.ValueOf(m3), "")
+	s.decompose(context.Background(), nil, reflect.ValueOf(m3), nil)
 	assert.Len(t, s.nodes, 4+2+0)
 }
 
@@ -302,7 +307,7 @@ func TestDecompositionMapSimpleStruct(t *testing.T) {
 	m["foo"] = testStruct{1, 2}
 	s := NewScanner(nil).WithParallism(5)
 
-	s.decompose(context.Background(), nil, reflect.ValueOf(m), "")
+	s.decompose(context.Background(), nil, reflect.ValueOf(m), nil)
 	assert.Len(t, s.nodes, 5)
 	assert.Len(t, s.maps, 1)
 
@@ -340,11 +345,11 @@ func TestDecompositionNestedStruct(t *testing.T) {
 	}
 
 	s1 := NewScanner(nil).WithParallism(8)
-	s1.decompose(context.Background(), nil, reflect.ValueOf(testObj1), "")
+	s1.decompose(context.Background(), nil, reflect.ValueOf(testObj1), nil)
 	assert.Len(t, s1.nodes, 8)
 
 	s2 := NewScanner(nil).WithParallism(5)
-	s2.decompose(context.Background(), nil, reflect.ValueOf(testObj2), "")
+	s2.decompose(context.Background(), nil, reflect.ValueOf(testObj2), nil)
 	assert.Len(t, s2.nodes, 5)
 }
 
@@ -371,7 +376,7 @@ func TestLinkedList(t *testing.T) {
 	head.next.next = head
 
 	s1 := NewScanner(nil).WithParallism(6)
-	s1.decompose(context.Background(), nil, reflect.ValueOf(head), "")
+	s1.decompose(context.Background(), nil, reflect.ValueOf(head), nil)
 	assert.Len(t, s1.nodes, 6)
 }
 

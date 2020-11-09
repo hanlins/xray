@@ -90,12 +90,20 @@ func (n *Node) Value() reflect.Value {
 	return n.value
 }
 
-// RegisterField add the field name -> node ID mapping to the node
-func (n *Node) RegisterField(fieldName string, id NodeID) {
+// registerMeta add the field name or index -> node ID mapping to the node
+func (n *Node) registerMeta(meta *decomposeMeta, id NodeID) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
-	n.Fields[fieldName] = id
+	if meta == nil {
+		return
+	}
+	switch n.Kind() {
+	case reflect.Struct:
+		n.Fields[meta.fieldName] = id
+	case reflect.Array, reflect.Slice:
+		n.Array[meta.index] = id
+	}
 }
 
 // string returns the string representation of the NodeID object
