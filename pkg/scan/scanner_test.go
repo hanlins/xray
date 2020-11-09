@@ -276,6 +276,24 @@ func TestDecompositionSimpleMap(t *testing.T) {
 	assert.Equal(t, s.getNodeID(vNode), s.maps[s.getNodeID(mapNode)][s.getNodeID(kNode)])
 }
 
+func TestDecompositionMapMultiVal(t *testing.T) {
+	m := make(map[string]int)
+	m["foo"] = 1
+	m["bar"] = 2
+	s := NewScanner(nil).WithParallism(100)
+	s.decompose(context.Background(), nil, reflect.ValueOf(m), nil)
+	_ = <-s.nodeIDCh
+	_ = <-s.nodeIDCh
+	_ = <-s.nodeIDCh
+	_ = <-s.nodeIDCh
+	mapId, ok := <-s.nodeIDCh
+	assert.True(t, ok)
+
+	assert.Len(t, s.nodes, 5)
+	assert.Len(t, s.maps, 1)
+	assert.Len(t, s.maps[mapId], 2)
+}
+
 // KV values for map are stored as different copies as the address of the
 // variables are different on stack
 func TestDecompositionMultiMapSameValue(t *testing.T) {

@@ -255,55 +255,47 @@ func (s *Scanner) handleArray(ctx context.Context, wg *sync.WaitGroup, node *Nod
 }
 
 func (s *Scanner) handleMap(ctx context.Context, wg *sync.WaitGroup, node *Node) {
+	defer wg.Done()
 	for _, keyVal := range node.value.MapKeys() {
 		valVal := node.value.MapIndex(keyVal)
-		ctlCh := make(chan int, 2)
+		ctlCh := make(chan int)
+		currWg := &sync.WaitGroup{}
 		// notice: only mark key as map's children
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			s.decompose(ctx, node, keyVal, nil)
-			// signal key complete
-			ctlCh <- 1
-		}()
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			s.decompose(ctx, nil, valVal, nil)
-			// signal val complete
-			ctlCh <- 2
-		}()
+		currWg.Add(1)
+		go func(val reflect.Value) {
+			defer currWg.Done()
+			s.decompose(ctx, node, val, nil)
+		}(keyVal)
+		currWg.Add(1)
+		go func(val reflect.Value) {
+			defer currWg.Done()
+			s.decompose(ctx, nil, val, nil)
+		}(valVal)
 		mapID := s.getNodeID(node)
+
+		// signal the map function once both kv decomposition completed
+		go func(ch chan int) {
+			currWg.Wait()
+			ch <- 1
+		}(ctlCh)
+
 		// map the key and val
-		go func() {
+		wg.Add(1)
+		go func(ch chan int, valVal, keyVal reflect.Value) {
 			defer wg.Done()
 			keyNode, valNode := NewNode(keyVal), NewNode(valVal)
 			keyID, valID := s.getNodeID(keyNode), s.getNodeID(valNode)
 
-			for {
-				select {
-				case <-ctlCh:
-					s.lock.Lock()
-					if prevKeyNode, exist := s.nodes[keyID]; !exist {
-						s.lock.Unlock()
-						continue
-					} else {
-						keyNode = prevKeyNode
-					}
-					if prevValNode, exist := s.nodes[valID]; !exist {
-						s.lock.Unlock()
-						continue
-					} else {
-						valNode = prevValNode
-					}
-					s.registerKVPair(mapID, keyID, valID)
-					s.lock.Unlock()
-					return
-				case <-ctx.Done():
-					return
-				}
+			select {
+			case <-ch:
+				s.lock.Lock()
+				s.registerKVPair(mapID, keyID, valID)
+				s.lock.Unlock()
+				return
+			case <-ctx.Done():
+				return
 			}
-		}()
+		}(ctlCh, valVal, keyVal)
 	}
 }
 

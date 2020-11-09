@@ -118,34 +118,38 @@ func (p *DefaultHandler) handleArray(g *GraphInfo, id scan.NodeID) {
 
 	prims := []string{}
 	for index, childId := range g.Nodes[id].Array {
+		// merge primitive type objects
+		p.setNodeRef(childId, fmt.Sprintf("%s:%d", id.Hash(), index))
 		if !childId.IsPrimitive() {
 			p.AddEdge(id, childId, strconv.Itoa(index), nil)
+			prims = append(prims, fmt.Sprintf("<%d> %d", index, index))
 			continue
 		}
-		// merge primitive type objects
-		p.setNodeRef(childId, fmt.Sprintf("%s:%s", id.Hash(), childId.Hash()))
 		prims = append(prims, labelPrimitive(childId))
 		// remove prev nodes
 		p.RemoveNode(childId)
 	}
 	attr := map[string]string{}
 	setRecord(attr)
-	addAttr(attr, "label", strings.Join(prims, ";"))
+	addAttr(attr, "label", strings.Join(prims, "|"))
 	p.AddNode(id, nil, attr)
 }
 
 func (p *DefaultHandler) handleMap(g *GraphInfo, id scan.NodeID) {
-	p.setNodeRef(id, id.Hash())
+	mapRef := fmt.Sprintf("cluster_%s", id.Hash())
+	p.setNodeRef(id, mapRef)
 	p.AddSubgraph(id, nil)
+	// add node with same name to the graph
+	p.AddNode(id, &id, map[string]string{"label": "map", "shape": "plaintext"})
 
 	m := g.Maps[id]
 	for k, v := range m {
 		// add both k and v to the subgraph
-		p.AddSubgraph(k, &id)
-		p.AddSubgraph(v, &id)
+		p.AddNode(k, &id, nil)
+		p.AddNode(v, &id, nil)
 		// add edge pointing k to v
 		p.AddEdge(k, v, "", map[string]string{"style": "dashed", "color": "blue"})
-		p.AddEdge(id, k, "", map[string]string{"style": "dashed", "color": "yellow"})
+		p.AddEdge(id, k, "", map[string]string{"style": "dashed", "color": "green"})
 	}
 }
 

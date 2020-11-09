@@ -77,6 +77,9 @@ func (p *Processor) AddNode(node scan.NodeID, graph *scan.NodeID, attr map[strin
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
+	if ni, exist := p.nodes[node]; exist && attr == nil {
+		attr = ni.attr
+	}
 	p.nodes[node] = NodeInfo{graph: graph, attr: attr}
 }
 
