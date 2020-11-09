@@ -131,7 +131,7 @@ func (p *DefaultHandler) handleArray(g *GraphInfo, id xray.NodeID) {
 	}
 	attr := map[string]string{}
 	setRecord(attr)
-	addAttr(attr, "label", strings.Join(prims, "|"))
+	addAttr(attr, "label", wrapAttr(strings.Join(prims, "|")))
 	p.AddNode(id, nil, attr)
 }
 
@@ -160,6 +160,7 @@ func (p *DefaultHandler) handleStruct(g *GraphInfo, id xray.NodeID) {
 	for fieldName, field := range g.Nodes[id].Fields {
 		if !field.IsPrimitive() {
 			p.AddEdge(id, field, fieldName, nil)
+			fields = append(fields, fmt.Sprintf("<%s>%s", fieldName, fieldName))
 			continue
 		}
 		// merge primitive type objects
@@ -170,6 +171,6 @@ func (p *DefaultHandler) handleStruct(g *GraphInfo, id xray.NodeID) {
 	}
 	attr := map[string]string{}
 	setRecord(attr)
-	addAttr(attr, "label", strings.Join(fields, ";"))
+	addAttr(attr, "label", wrapAttr(strings.Join(fields, "|")))
 	p.AddNode(id, nil, attr)
 }

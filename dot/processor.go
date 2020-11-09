@@ -2,6 +2,7 @@ package dot
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/awalterschulze/gographviz"
@@ -116,6 +117,15 @@ func (p *Processor) getParentGraph(parent *xray.NodeID) string {
 	return p.name
 }
 
+// breakEdgeEndpoint breaks the node reference to a dot node and its port
+func breakEdgeEndpoint(nodeRef string) (string, string) {
+	if strings.Contains(nodeRef, ":") {
+		split := strings.Split(nodeRef, ":")
+		return split[0], split[1]
+	}
+	return nodeRef, ""
+}
+
 // Render add the observed graph objects to the current graph
 func (p *Processor) Render() error {
 	p.lock.Lock()
@@ -133,7 +143,13 @@ func (p *Processor) Render() error {
 	}
 	// add nodes
 	for id, info := range p.nodes {
-		err := p.graph.AddNode(p.getParentGraph(info.graph), p.nodeRef[id], info.attr)
+		nodeRef := p.nodeRef[id]
+		// skip merged fields
+		if strings.Contains(nodeRef, ":") {
+			continue
+		}
+
+		err := p.graph.AddNode(p.getParentGraph(info.graph), nodeRef, info.attr)
 		if err != nil {
 			return err
 		}
@@ -151,7 +167,9 @@ func (p *Processor) Render() error {
 		if !exist {
 			return fmt.Errorf("failed to find node reference for dst '%#v'", ep.dst)
 		}
-		err := p.graph.AddEdge(srcRef, dstRef, true, attr)
+		srcNode, srcPort := breakEdgeEndpoint(srcRef)
+		dstNode, dstPort := breakEdgeEndpoint(dstRef)
+		err := p.graph.AddPortEdge(srcNode, srcPort, dstNode, dstPort, true, attr)
 		if err != nil {
 			return err
 		}

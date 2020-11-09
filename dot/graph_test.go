@@ -127,3 +127,48 @@ func TestProcessMap(t *testing.T) {
 	_, ok = <-nodeCh
 	assert.False(t, ok)
 }
+
+type test1 struct {
+	p   *string
+	arr []int
+	m   map[string]int
+}
+
+func TestProcessStruct(t *testing.T) {
+	str := "deadbeef"
+	ts := test1{
+		p:   &str,
+		arr: []int{80, 40, 8840},
+		m:   map[string]int{"foo": 1, "bar": 2},
+	}
+	s := xray.NewScanner(nil)
+	nodeCh := s.Scan(ts)
+	gi := NewGraphInfo(s)
+	p := &DefaultHandler{*NewProcessor()}
+
+	for i := 0; i < 12; i++ {
+		id, ok := <-nodeCh
+		assert.True(t, ok)
+		p.Process(gi, id)
+	}
+	_, ok := <-nodeCh
+	assert.False(t, ok)
+	p.Render()
+
+	assert.NotNil(t, p.graph)
+	assert.True(t, p.graph.Directed)
+	assert.False(t, p.graph.Strict)
+	assert.NotNil(t, p.graph.Nodes)
+	assert.Len(t, p.graph.Nodes.Nodes, 9)
+	assert.NotNil(t, p.graph.Edges)
+	assert.Len(t, p.graph.Edges.Edges, 8)
+	assert.NotNil(t, p.graph.SubGraphs)
+	assert.Len(t, p.graph.SubGraphs.SubGraphs, 1)
+	assert.NotNil(t, p.graph.Relations)
+	assert.Len(t, p.graph.Relations.ParentToChildren, 2)
+	assert.Len(t, p.graph.Relations.ChildToParents, 9)
+	assert.NoError(t, validateGraph(p.graph))
+
+	_, ok = <-nodeCh
+	assert.False(t, ok)
+}
