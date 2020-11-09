@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/awalterschulze/gographviz"
 	"github.com/hanlins/xray"
 )
 
@@ -34,6 +35,7 @@ func NewGraphInfo(s *xray.Scanner) *GraphInfo {
 // to manage the objects to be rendered
 type Handler interface {
 	Process(*GraphInfo, xray.NodeID)
+	Render() (*gographviz.Graph, error)
 }
 
 type DefaultHandler struct {
@@ -182,4 +184,19 @@ func (p *DefaultHandler) handleStruct(g *GraphInfo, id xray.NodeID) {
 	setRecord(attr)
 	addAttr(attr, "label", wrapAttr(strings.Join(fields, "|")))
 	p.AddNode(id, nil, attr)
+}
+
+// Draw returns the Graph object of the given scan result
+// Notice this operation is blocking
+func Draw(gi *GraphInfo, nodeCh <-chan xray.NodeID, h Handler) (*gographviz.Graph, error) {
+	if h == nil {
+		h = &DefaultHandler{*NewProcessor()}
+	}
+
+	// process objects until the channel is closed
+	for id, ok := <-nodeCh; ok; id, ok = <-nodeCh {
+		h.Process(gi, id)
+	}
+
+	return h.Render()
 }

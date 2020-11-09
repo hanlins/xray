@@ -89,7 +89,7 @@ func TestRegisterSubgraph(t *testing.T) {
 
 func TestRenderEmpty(t *testing.T) {
 	p := NewProcessor()
-	err := p.Render()
+	_, err := p.Render()
 
 	assert.Equal(t, GraphName, p.graph.Name)
 	assert.True(t, p.graph.Directed)
@@ -125,7 +125,7 @@ func TestRender(t *testing.T) {
 	p.setNodeRef(id2, "cluster_node2")
 	p.setNodeRef(id3, "node3")
 	p.AddNode(id1, &id2, nil)
-	err := p.Render()
+	_, err := p.Render()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, p.graph.Nodes)

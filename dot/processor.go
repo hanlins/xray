@@ -127,7 +127,7 @@ func breakEdgeEndpoint(nodeRef string) (string, string) {
 }
 
 // Render add the observed graph objects to the current graph
-func (p *Processor) Render() error {
+func (p *Processor) Render() (*gographviz.Graph, error) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -138,7 +138,7 @@ func (p *Processor) Render() error {
 	for node, graph := range p.subgraphs {
 		err := p.graph.AddSubGraph(p.getParentGraph(graph), p.nodeRef[node], nil)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	// add nodes
@@ -151,28 +151,28 @@ func (p *Processor) Render() error {
 
 		err := p.graph.AddNode(p.getParentGraph(info.graph), nodeRef, info.attr)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	// add edges
 	for ep, attr := range p.edges {
 		srcRef, exist := p.nodeRef[ep.src]
 		if !exist {
-			return fmt.Errorf("failed to find node reference for src '%#v'", ep.src)
+			return nil, fmt.Errorf("failed to find node reference for src '%#v'", ep.src)
 		}
 		if ep.srcField != "" {
 			srcRef = fmt.Sprintf("%s:%s", srcRef, ep.srcField)
 		}
 		dstRef, exist := p.nodeRef[ep.dst]
 		if !exist {
-			return fmt.Errorf("failed to find node reference for dst '%#v'", ep.dst)
+			return nil, fmt.Errorf("failed to find node reference for dst '%#v'", ep.dst)
 		}
 		srcNode, srcPort := breakEdgeEndpoint(srcRef)
 		dstNode, dstPort := breakEdgeEndpoint(dstRef)
 		err := p.graph.AddPortEdge(srcNode, srcPort, dstNode, dstPort, true, attr)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return p.graph, nil
 }

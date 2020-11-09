@@ -40,20 +40,21 @@ func TestProcessPrimitive(t *testing.T) {
 	gi := NewGraphInfo(s)
 	p := &DefaultHandler{*NewProcessor()}
 	p.Process(gi, nid)
-	p.Render()
-	assert.NotNil(t, p.graph)
-	assert.True(t, p.graph.Directed)
-	assert.False(t, p.graph.Strict)
-	assert.NotNil(t, p.graph.Nodes)
-	assert.Len(t, p.graph.Nodes.Nodes, 1)
-	assert.NotNil(t, p.graph.Edges)
-	assert.Len(t, p.graph.Edges.Edges, 0)
-	assert.NotNil(t, p.graph.SubGraphs)
-	assert.Len(t, p.graph.SubGraphs.SubGraphs, 0)
-	assert.NotNil(t, p.graph.Relations)
-	assert.Len(t, p.graph.Relations.ParentToChildren, 1)
-	assert.Len(t, p.graph.Relations.ChildToParents, 1)
-	assert.NoError(t, validateGraph(p.graph))
+	g, err := p.Render()
+	assert.NoError(t, err)
+	assert.NotNil(t, g)
+	assert.True(t, g.Directed)
+	assert.False(t, g.Strict)
+	assert.NotNil(t, g.Nodes)
+	assert.Len(t, g.Nodes.Nodes, 1)
+	assert.NotNil(t, g.Edges)
+	assert.Len(t, g.Edges.Edges, 0)
+	assert.NotNil(t, g.SubGraphs)
+	assert.Len(t, g.SubGraphs.SubGraphs, 0)
+	assert.NotNil(t, g.Relations)
+	assert.Len(t, g.Relations.ParentToChildren, 1)
+	assert.Len(t, g.Relations.ChildToParents, 1)
+	assert.NoError(t, validateGraph(g))
 
 	_, ok = <-nodeCh
 	assert.False(t, ok)
@@ -73,21 +74,22 @@ func TestProcessPointer(t *testing.T) {
 	pid, ok := <-nodeCh
 	assert.True(t, ok)
 	p.Process(gi, pid)
-	p.Render()
 
-	assert.NotNil(t, p.graph)
-	assert.True(t, p.graph.Directed)
-	assert.False(t, p.graph.Strict)
-	assert.NotNil(t, p.graph.Nodes)
-	assert.Len(t, p.graph.Nodes.Nodes, 2)
-	assert.NotNil(t, p.graph.Edges)
-	assert.Len(t, p.graph.Edges.Edges, 1)
-	assert.NotNil(t, p.graph.SubGraphs)
-	assert.Len(t, p.graph.SubGraphs.SubGraphs, 0)
-	assert.NotNil(t, p.graph.Relations)
-	assert.Len(t, p.graph.Relations.ParentToChildren, 1)
-	assert.Len(t, p.graph.Relations.ChildToParents, 2)
-	assert.NoError(t, validateGraph(p.graph))
+	g, err := p.Render()
+	assert.NoError(t, err)
+	assert.NotNil(t, g)
+	assert.True(t, g.Directed)
+	assert.False(t, g.Strict)
+	assert.NotNil(t, g.Nodes)
+	assert.Len(t, g.Nodes.Nodes, 2)
+	assert.NotNil(t, g.Edges)
+	assert.Len(t, g.Edges.Edges, 1)
+	assert.NotNil(t, g.SubGraphs)
+	assert.Len(t, g.SubGraphs.SubGraphs, 0)
+	assert.NotNil(t, g.Relations)
+	assert.Len(t, g.Relations.ParentToChildren, 1)
+	assert.Len(t, g.Relations.ChildToParents, 2)
+	assert.NoError(t, validateGraph(g))
 
 	_, ok = <-nodeCh
 	assert.False(t, ok)
@@ -108,21 +110,22 @@ func TestProcessMap(t *testing.T) {
 	}
 	_, ok := <-nodeCh
 	assert.False(t, ok)
-	p.Render()
 
-	assert.NotNil(t, p.graph)
-	assert.True(t, p.graph.Directed)
-	assert.False(t, p.graph.Strict)
-	assert.NotNil(t, p.graph.Nodes)
-	assert.Len(t, p.graph.Nodes.Nodes, 5)
-	assert.NotNil(t, p.graph.Edges)
-	assert.Len(t, p.graph.Edges.Edges, 4)
-	assert.NotNil(t, p.graph.SubGraphs)
-	assert.Len(t, p.graph.SubGraphs.SubGraphs, 1)
-	assert.NotNil(t, p.graph.Relations)
-	assert.Len(t, p.graph.Relations.ParentToChildren, 2)
-	assert.Len(t, p.graph.Relations.ChildToParents, 5)
-	assert.NoError(t, validateGraph(p.graph))
+	g, err := p.Render()
+	assert.NoError(t, err)
+	assert.NotNil(t, g)
+	assert.True(t, g.Directed)
+	assert.False(t, g.Strict)
+	assert.NotNil(t, g.Nodes)
+	assert.Len(t, g.Nodes.Nodes, 5)
+	assert.NotNil(t, g.Edges)
+	assert.Len(t, g.Edges.Edges, 4)
+	assert.NotNil(t, g.SubGraphs)
+	assert.Len(t, g.SubGraphs.SubGraphs, 1)
+	assert.NotNil(t, g.Relations)
+	assert.Len(t, g.Relations.ParentToChildren, 2)
+	assert.Len(t, g.Relations.ChildToParents, 5)
+	assert.NoError(t, validateGraph(g))
 
 	_, ok = <-nodeCh
 	assert.False(t, ok)
@@ -152,22 +155,23 @@ func TestProcessStruct(t *testing.T) {
 		p.Process(gi, id)
 	}
 	_, ok := <-nodeCh
-	assert.False(t, ok)
-	p.Render()
 
-	assert.NotNil(t, p.graph)
-	assert.True(t, p.graph.Directed)
-	assert.False(t, p.graph.Strict)
-	assert.NotNil(t, p.graph.Nodes)
-	assert.Len(t, p.graph.Nodes.Nodes, 8)
-	assert.NotNil(t, p.graph.Edges)
-	assert.Len(t, p.graph.Edges.Edges, 7)
-	assert.NotNil(t, p.graph.SubGraphs)
-	assert.Len(t, p.graph.SubGraphs.SubGraphs, 1)
-	assert.NotNil(t, p.graph.Relations)
-	assert.Len(t, p.graph.Relations.ParentToChildren, 2)
-	assert.Len(t, p.graph.Relations.ChildToParents, 8)
-	assert.NoError(t, validateGraph(p.graph))
+	assert.False(t, ok)
+	g, err := p.Render()
+	assert.NoError(t, err)
+	assert.NotNil(t, g)
+	assert.True(t, g.Directed)
+	assert.False(t, g.Strict)
+	assert.NotNil(t, g.Nodes)
+	assert.Len(t, g.Nodes.Nodes, 8)
+	assert.NotNil(t, g.Edges)
+	assert.Len(t, g.Edges.Edges, 7)
+	assert.NotNil(t, g.SubGraphs)
+	assert.Len(t, g.SubGraphs.SubGraphs, 1)
+	assert.NotNil(t, g.Relations)
+	assert.Len(t, g.Relations.ParentToChildren, 2)
+	assert.Len(t, g.Relations.ChildToParents, 8)
+	assert.NoError(t, validateGraph(g))
 
 	_, ok = <-nodeCh
 	assert.False(t, ok)
@@ -178,18 +182,16 @@ type listnode struct {
 	next *listnode
 }
 
-func TestLinkedListLoop(t *testing.T) {
+func TestDrawLinkedListLoop(t *testing.T) {
 	l1 := &listnode{val: 1}
 	l1.next = &listnode{val: 2}
 	l1.next.next = &listnode{val: 3}
 	l1.next.next.next = l1
+
 	s := xray.NewScanner(nil)
 	nodeCh := s.Scan(l1)
-	gi := NewGraphInfo(s)
-	p := &DefaultHandler{*NewProcessor()}
 
-	for id, ok := <-nodeCh; ok; id, ok = <-nodeCh {
-		p.Process(gi, id)
-	}
-	p.Render()
+	g, err := Draw(NewGraphInfo(s), nodeCh, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, g)
 }
