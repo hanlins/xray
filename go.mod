@@ -1,4 +1,4 @@
-module github.com/hanlins/objscan
+module github.com/hanlins/xray
 
 go 1.14
 

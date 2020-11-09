@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hanlins/objscan/pkg/scan"
+	"github.com/hanlins/xray"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,8 +32,8 @@ func getTypeID(t reflect.Type) string {
 }
 
 // getObjNodeID returns the ID for an non-nil object
-func getObjNodeID(obj interface{}) scan.NodeID {
-	node := scan.NewNode(reflect.ValueOf(obj))
+func getObjNodeID(obj interface{}) xray.NodeID {
+	node := xray.NewNode(reflect.ValueOf(obj))
 	return node.NodeID(getTypeID)
 }
 

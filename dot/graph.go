@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hanlins/objscan/pkg/scan"
+	"github.com/hanlins/xray"
 )
 
 const (
@@ -16,12 +16,12 @@ const (
 // GraphInfo contains the raw node data collected without being processed
 type GraphInfo struct {
 	// scanned results, all nodes that has been scanned
-	Nodes map[scan.NodeID]*scan.Node
+	Nodes map[xray.NodeID]*xray.Node
 	// maps stores the KV pairs for each map
-	Maps map[scan.NodeID]map[scan.NodeID]scan.NodeID
+	Maps map[xray.NodeID]map[xray.NodeID]xray.NodeID
 }
 
-func NewGraphInfo(s *scan.Scanner) *GraphInfo {
+func NewGraphInfo(s *xray.Scanner) *GraphInfo {
 	gi := &GraphInfo{}
 	gi.Nodes = s.Nodes()
 	gi.Maps = s.Maps()
@@ -33,7 +33,7 @@ func NewGraphInfo(s *scan.Scanner) *GraphInfo {
 // it can read the global nodes information, and it's can use its custome logic
 // to manage the objects to be rendered
 type Handler interface {
-	Process(*GraphInfo, scan.NodeID)
+	Process(*GraphInfo, xray.NodeID)
 }
 
 type DefaultHandler struct {
@@ -52,7 +52,7 @@ func addAttr(attr map[string]string, key, value string) map[string]string {
 	return attr
 }
 
-func labelPrimitive(id scan.NodeID) string {
+func labelPrimitive(id xray.NodeID) string {
 	return fmt.Sprintf("<%s> %s", id.Hash(), id.String())
 }
 
@@ -62,7 +62,7 @@ func wrapAttr(attrStr string) string {
 	return fmt.Sprintf("\"%s\"", attrStr)
 }
 
-func (p *DefaultHandler) Process(g *GraphInfo, id scan.NodeID) {
+func (p *DefaultHandler) Process(g *GraphInfo, id xray.NodeID) {
 	switch id.Kind() {
 	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16:
 		fallthrough
@@ -91,7 +91,7 @@ func (p *DefaultHandler) Process(g *GraphInfo, id scan.NodeID) {
 	return
 }
 
-func (p *DefaultHandler) handlePrimitive(g *GraphInfo, id scan.NodeID) {
+func (p *DefaultHandler) handlePrimitive(g *GraphInfo, id xray.NodeID) {
 	attr := map[string]string{}
 	setRecord(attr)
 	attr[Label] = wrapAttr(labelPrimitive(id))
@@ -99,11 +99,11 @@ func (p *DefaultHandler) handlePrimitive(g *GraphInfo, id scan.NodeID) {
 	p.AddNode(id, nil, attr)
 }
 
-func labelPointer(id scan.NodeID) string {
+func labelPointer(id xray.NodeID) string {
 	return id.Type()
 }
 
-func (p *DefaultHandler) handlePtr(g *GraphInfo, id scan.NodeID) {
+func (p *DefaultHandler) handlePtr(g *GraphInfo, id xray.NodeID) {
 	attr := map[string]string{}
 	attr[Label] = wrapAttr(labelPointer(id))
 	p.setNodeRef(id, id.Hash())
@@ -113,7 +113,7 @@ func (p *DefaultHandler) handlePtr(g *GraphInfo, id scan.NodeID) {
 	}
 }
 
-func (p *DefaultHandler) handleArray(g *GraphInfo, id scan.NodeID) {
+func (p *DefaultHandler) handleArray(g *GraphInfo, id xray.NodeID) {
 	p.setNodeRef(id, id.Hash())
 
 	prims := []string{}
@@ -135,7 +135,7 @@ func (p *DefaultHandler) handleArray(g *GraphInfo, id scan.NodeID) {
 	p.AddNode(id, nil, attr)
 }
 
-func (p *DefaultHandler) handleMap(g *GraphInfo, id scan.NodeID) {
+func (p *DefaultHandler) handleMap(g *GraphInfo, id xray.NodeID) {
 	mapRef := fmt.Sprintf("cluster_%s", id.Hash())
 	p.setNodeRef(id, mapRef)
 	p.AddSubgraph(id, nil)
@@ -153,7 +153,7 @@ func (p *DefaultHandler) handleMap(g *GraphInfo, id scan.NodeID) {
 	}
 }
 
-func (p *DefaultHandler) handleStruct(g *GraphInfo, id scan.NodeID) {
+func (p *DefaultHandler) handleStruct(g *GraphInfo, id xray.NodeID) {
 	p.setNodeRef(id, id.Hash())
 
 	fields := []string{}

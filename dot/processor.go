@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/awalterschulze/gographviz"
-	"github.com/hanlins/objscan/pkg/scan"
+	"github.com/hanlins/xray"
 )
 
 const (
@@ -18,16 +18,16 @@ type Processor struct {
 	// nodeRef keeps track of the ID to reference mapping
 	// the mapping will be used to reference the node in the graph
 	// e.g. creating an edge
-	nodeRef map[scan.NodeID]string
+	nodeRef map[xray.NodeID]string
 	// nodes stores the information to construct the node
-	nodes map[scan.NodeID]NodeInfo
+	nodes map[xray.NodeID]NodeInfo
 	// edges keeps track of the edges to be rendered
 	// key is the source->dst pair, value is the attribute of the edge
 	edges map[EdgePair]map[string]string
 	// subgraphs keeps track of the subgraphs to be rendered
 	// key is the child graph and value is its parent
 	// if parent is nil then add the child to the default graph
-	subgraphs map[scan.NodeID]*scan.NodeID
+	subgraphs map[xray.NodeID]*xray.NodeID
 
 	// graph is used for dot graph rendering
 	graph *gographviz.Graph
@@ -38,15 +38,15 @@ type Processor struct {
 // NodeInfo stores the necessary information to construct a node in dot format
 // if graph points to nil then the node should be added to the outmost graph
 type NodeInfo struct {
-	graph *scan.NodeID
+	graph *xray.NodeID
 	attr  map[string]string
 }
 
 // EdgePair describes the source and desgination of an edge
 // it's also used to identify the edge
 type EdgePair struct {
-	src scan.NodeID
-	dst scan.NodeID
+	src xray.NodeID
+	dst xray.NodeID
 
 	srcField string
 }
@@ -55,17 +55,17 @@ type EdgePair struct {
 func NewProcessor() *Processor {
 	p := &Processor{}
 	p.lock = &sync.Mutex{}
-	p.nodeRef = make(map[scan.NodeID]string)
-	p.nodes = make(map[scan.NodeID]NodeInfo)
+	p.nodeRef = make(map[xray.NodeID]string)
+	p.nodes = make(map[xray.NodeID]NodeInfo)
 	p.edges = make(map[EdgePair]map[string]string)
-	p.subgraphs = make(map[scan.NodeID]*scan.NodeID)
+	p.subgraphs = make(map[xray.NodeID]*xray.NodeID)
 	p.graph = gographviz.NewGraph()
 	p.name = GraphName
 	return p
 }
 
 // setnodeRef maps a node ID to its reference string
-func (p *Processor) setNodeRef(id scan.NodeID, ref string) {
+func (p *Processor) setNodeRef(id xray.NodeID, ref string) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -73,7 +73,7 @@ func (p *Processor) setNodeRef(id scan.NodeID, ref string) {
 }
 
 // AddNode registers a node
-func (p *Processor) AddNode(node scan.NodeID, graph *scan.NodeID, attr map[string]string) {
+func (p *Processor) AddNode(node xray.NodeID, graph *xray.NodeID, attr map[string]string) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -84,7 +84,7 @@ func (p *Processor) AddNode(node scan.NodeID, graph *scan.NodeID, attr map[strin
 }
 
 // RemoverNode removes the node
-func (p *Processor) RemoveNode(node scan.NodeID) {
+func (p *Processor) RemoveNode(node xray.NodeID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -92,7 +92,7 @@ func (p *Processor) RemoveNode(node scan.NodeID) {
 }
 
 // AddEdge registers an edge
-func (p *Processor) AddEdge(src, dst scan.NodeID, srcField string, attr map[string]string) {
+func (p *Processor) AddEdge(src, dst xray.NodeID, srcField string, attr map[string]string) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -101,7 +101,7 @@ func (p *Processor) AddEdge(src, dst scan.NodeID, srcField string, attr map[stri
 }
 
 // AddSubgraph registers an subgraph
-func (p *Processor) AddSubgraph(child scan.NodeID, parent *scan.NodeID) {
+func (p *Processor) AddSubgraph(child xray.NodeID, parent *xray.NodeID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -109,7 +109,7 @@ func (p *Processor) AddSubgraph(child scan.NodeID, parent *scan.NodeID) {
 }
 
 // getParentGraph returns the name of the parent graph
-func (p *Processor) getParentGraph(parent *scan.NodeID) string {
+func (p *Processor) getParentGraph(parent *xray.NodeID) string {
 	if parent != nil {
 		return p.nodeRef[*parent]
 	}

@@ -1,4 +1,4 @@
-package scan
+package xray
 
 import (
 	"reflect"
@@ -73,7 +73,7 @@ func TestStructNodeIDString(t *testing.T) {
 	tn := nodeTestStruct{field1: 1, field2: 2}
 	nilNode := NewNode(reflect.ValueOf(tn))
 	nilNodeID := nilNode.NodeID(getTypeID)
-	assert.Equal(t, "github.com/hanlins/objscan/pkg/scan/nodeTestStruct/scan.nodeTestStruct.scan.nodeTestStruct{field1:1, field2:2}", nilNodeID.string())
+	assert.Equal(t, "github.com/hanlins/xray/nodeTestStruct/xray.nodeTestStruct.xray.nodeTestStruct{field1:1, field2:2}", nilNodeID.string())
 }
 
 func TestNodeIDHash(t *testing.T) {

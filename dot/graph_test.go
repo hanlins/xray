@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/awalterschulze/gographviz"
-	"github.com/hanlins/objscan/pkg/scan"
+	"github.com/hanlins/xray"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewGraphInfo(t *testing.T) {
-	s := scan.NewScanner(nil)
+	s := xray.NewScanner(nil)
 	nodeCh := s.Scan(100)
 	_ = <-nodeCh
 
@@ -19,7 +19,7 @@ func TestNewGraphInfo(t *testing.T) {
 }
 
 func TestPrimitiveLabel(t *testing.T) {
-	s := scan.NewScanner(nil)
+	s := xray.NewScanner(nil)
 	nodeCh := s.Scan(100)
 	intId := <-nodeCh
 
@@ -32,7 +32,7 @@ func validateGraph(g *gographviz.Graph) error {
 }
 
 func TestProcessPrimitive(t *testing.T) {
-	s := scan.NewScanner(nil)
+	s := xray.NewScanner(nil)
 	nodeCh := s.Scan(100)
 	nid, ok := <-nodeCh
 	assert.True(t, ok)
@@ -61,7 +61,7 @@ func TestProcessPrimitive(t *testing.T) {
 
 func TestProcessPointer(t *testing.T) {
 	str := "deadbeef"
-	s := scan.NewScanner(nil)
+	s := xray.NewScanner(nil)
 	nodeCh := s.Scan(&str)
 	gi := NewGraphInfo(s)
 	p := &DefaultHandler{*NewProcessor()}
@@ -96,7 +96,7 @@ func TestProcessPointer(t *testing.T) {
 func TestProcessMap(t *testing.T) {
 	m := map[string]string{"foo": "bar"}
 	m["dead"] = "beef"
-	s := scan.NewScanner(nil)
+	s := xray.NewScanner(nil)
 	nodeCh := s.Scan(m)
 	gi := NewGraphInfo(s)
 	p := &DefaultHandler{*NewProcessor()}

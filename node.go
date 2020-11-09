@@ -1,4 +1,4 @@
-package scan
+package xray
 
 import (
 	"fmt"
