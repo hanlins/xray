@@ -108,7 +108,7 @@ func (p *Processor) AddSubgraph(child scan.NodeID, parent *scan.NodeID) {
 // getParentGraph returns the name of the parent graph
 func (p *Processor) getParentGraph(parent *scan.NodeID) string {
 	if parent != nil {
-		return parent.Hash()
+		return p.nodeRef[*parent]
 	}
 	return p.name
 }
@@ -123,14 +123,14 @@ func (p *Processor) Render() error {
 
 	// add subgraphs
 	for node, graph := range p.subgraphs {
-		err := p.graph.AddSubGraph(p.getParentGraph(graph), node.Hash(), nil)
+		err := p.graph.AddSubGraph(p.getParentGraph(graph), p.nodeRef[node], nil)
 		if err != nil {
 			return err
 		}
 	}
 	// add nodes
 	for id, info := range p.nodes {
-		err := p.graph.AddNode(p.getParentGraph(info.graph), id.Hash(), info.attr)
+		err := p.graph.AddNode(p.getParentGraph(info.graph), p.nodeRef[id], info.attr)
 		if err != nil {
 			return err
 		}
@@ -144,7 +144,7 @@ func (p *Processor) Render() error {
 		if ep.srcField != "" {
 			srcRef = fmt.Sprintf("%s:%s", srcRef, ep.srcField)
 		}
-		dstRef, exist := p.nodeRef[ep.src]
+		dstRef, exist := p.nodeRef[ep.dst]
 		if !exist {
 			return fmt.Errorf("failed to find node reference for dst '%#v'", ep.dst)
 		}

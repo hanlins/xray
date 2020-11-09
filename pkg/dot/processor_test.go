@@ -122,6 +122,8 @@ func TestRender(t *testing.T) {
 	// overwrite id1, add it as child as id2
 	p.AddSubgraph(id2, nil)
 	p.setNodeRef(id1, "node1")
+	p.setNodeRef(id2, "cluster_node2")
+	p.setNodeRef(id3, "node3")
 	p.AddNode(id1, &id2, nil)
 	err := p.Render()
 
