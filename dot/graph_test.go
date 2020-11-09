@@ -23,7 +23,7 @@ func TestPrimitiveLabel(t *testing.T) {
 	nodeCh := s.Scan(100)
 	intId := <-nodeCh
 
-	assert.Regexp(t, "<*> 100", labelPrimitive(intId))
+	assert.Regexp(t, "<*>100", labelPrimitive(intId))
 }
 
 func validateGraph(g *gographviz.Graph) error {
@@ -159,14 +159,14 @@ func TestProcessStruct(t *testing.T) {
 	assert.True(t, p.graph.Directed)
 	assert.False(t, p.graph.Strict)
 	assert.NotNil(t, p.graph.Nodes)
-	assert.Len(t, p.graph.Nodes.Nodes, 9)
+	assert.Len(t, p.graph.Nodes.Nodes, 8)
 	assert.NotNil(t, p.graph.Edges)
-	assert.Len(t, p.graph.Edges.Edges, 8)
+	assert.Len(t, p.graph.Edges.Edges, 7)
 	assert.NotNil(t, p.graph.SubGraphs)
 	assert.Len(t, p.graph.SubGraphs.SubGraphs, 1)
 	assert.NotNil(t, p.graph.Relations)
 	assert.Len(t, p.graph.Relations.ParentToChildren, 2)
-	assert.Len(t, p.graph.Relations.ChildToParents, 9)
+	assert.Len(t, p.graph.Relations.ChildToParents, 8)
 	assert.NoError(t, validateGraph(p.graph))
 
 	_, ok = <-nodeCh
