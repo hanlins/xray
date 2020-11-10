@@ -54,12 +54,23 @@ func addAttr(attr map[string]string, key, value string) map[string]string {
 	return attr
 }
 
+func escapeString(str string) string {
+	escapeChar := []string{
+		"{", "}",
+		"<", ">",
+	}
+	for _, ch := range escapeChar {
+		str = strings.ReplaceAll(str, ch, "\\"+ch)
+	}
+	return str
+}
+
 func labelPrimitive(id xray.NodeID) string {
-	return fmt.Sprintf("<%s>%s", id.Hash(), id.String())
+	return fmt.Sprintf("<%s>%s", id.Hash(), escapeString(id.String()))
 }
 
 func labelPrimitiveWithField(id xray.NodeID, field string) string {
-	return fmt.Sprintf("<%s>%s: %s", id.Hash(), field, id.String())
+	return fmt.Sprintf("<%s>%s: %s", id.Hash(), field, escapeString(id.String()))
 }
 
 // wrapAttr is the helper to wrap an attribute as a string
@@ -193,8 +204,13 @@ func Draw(gi *GraphInfo, nodeCh <-chan xray.NodeID, h Handler) (*gographviz.Grap
 		h = &DefaultHandler{*NewProcessor()}
 	}
 
-	// process objects until the channel is closed
+	idList := []xray.NodeID{}
+	// cache objects until the channel is closed
+	// don't process node until done with scan to avoid concurrent RW
 	for id, ok := <-nodeCh; ok; id, ok = <-nodeCh {
+		idList = append(idList, id)
+	}
+	for _, id := range idList {
 		h.Process(gi, id)
 	}
 
