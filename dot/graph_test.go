@@ -21,9 +21,9 @@ func TestNewGraphInfo(t *testing.T) {
 func TestPrimitiveLabel(t *testing.T) {
 	s := xray.NewScanner(nil)
 	nodeCh := s.Scan(100)
-	intId := <-nodeCh
+	intID := <-nodeCh
 
-	assert.Regexp(t, "<*>100", labelPrimitive(intId))
+	assert.Regexp(t, "<*>100", labelPrimitive(intID))
 }
 
 func validateGraph(g *gographviz.Graph) error {

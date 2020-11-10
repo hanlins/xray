@@ -10,9 +10,11 @@ import (
 )
 
 const (
+	// GraphName is the default name for graph
 	GraphName = "G"
 )
 
+// Processor is used for convert the node information to gographviz.Graph
 type Processor struct {
 	lock *sync.Mutex
 
@@ -43,7 +45,7 @@ type NodeInfo struct {
 	attr  map[string]string
 }
 
-// EdgePair describes the source and desgination of an edge
+// EdgePair describes the source and designation of an edge
 // it's also used to identify the edge
 type EdgePair struct {
 	src xray.NodeID
@@ -84,7 +86,7 @@ func (p *Processor) AddNode(node xray.NodeID, graph *xray.NodeID, attr map[strin
 	p.nodes[node] = NodeInfo{graph: graph, attr: attr}
 }
 
-// RemoverNode removes the node
+// RemoveNode removes the node
 func (p *Processor) RemoveNode(node xray.NodeID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()

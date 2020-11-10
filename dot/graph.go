@@ -22,6 +22,7 @@ type GraphInfo struct {
 	Maps map[xray.NodeID]map[xray.NodeID]xray.NodeID
 }
 
+// NewGraphInfo construct the graph info from scanner
 func NewGraphInfo(s *xray.Scanner) *GraphInfo {
 	gi := &GraphInfo{}
 	gi.Nodes = s.Nodes()
@@ -38,6 +39,7 @@ type Handler interface {
 	Render() (*gographviz.Graph, error)
 }
 
+// DefaultHandler is the default dot handler
 type DefaultHandler struct {
 	Processor
 }
@@ -79,6 +81,7 @@ func wrapAttr(attrStr string) string {
 	return fmt.Sprintf("\"%s\"", attrStr)
 }
 
+// Process is the node handling logic for default handler
 func (p *DefaultHandler) Process(g *GraphInfo, id xray.NodeID) {
 	switch id.Kind() {
 	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16:
@@ -125,8 +128,8 @@ func (p *DefaultHandler) handlePtr(g *GraphInfo, id xray.NodeID) {
 	attr[Label] = wrapAttr(labelPointer(id))
 	p.setNodeRef(id, id.Hash())
 	p.AddNode(id, nil, attr)
-	for childId, _ := range g.Nodes[id].Children {
-		p.AddEdge(id, childId, "", map[string]string{"style": "dashed"})
+	for childID := range g.Nodes[id].Children {
+		p.AddEdge(id, childID, "", map[string]string{"style": "dashed"})
 	}
 }
 
@@ -134,17 +137,17 @@ func (p *DefaultHandler) handleArray(g *GraphInfo, id xray.NodeID) {
 	p.setNodeRef(id, id.Hash())
 
 	prims := []string{}
-	for index, childId := range g.Nodes[id].Array {
+	for index, childID := range g.Nodes[id].Array {
 		// merge primitive type objects
-		p.setNodeRef(childId, fmt.Sprintf("%s:%d", id.Hash(), index))
-		if !childId.IsPrimitive() {
-			p.AddEdge(id, childId, strconv.Itoa(index), nil)
+		p.setNodeRef(childID, fmt.Sprintf("%s:%d", id.Hash(), index))
+		if !childID.IsPrimitive() {
+			p.AddEdge(id, childID, strconv.Itoa(index), nil)
 			prims = append(prims, fmt.Sprintf("<%d> %d", index, index))
 			continue
 		}
-		prims = append(prims, labelPrimitive(childId))
+		prims = append(prims, labelPrimitive(childID))
 		// remove prev nodes
-		p.RemoveNode(childId)
+		p.RemoveNode(childID)
 	}
 	attr := map[string]string{}
 	setRecord(attr)

@@ -21,8 +21,8 @@ type Scanner struct {
 	// maps stores the KV pairs for each map
 	maps map[NodeID]map[NodeID]NodeID
 
-	// typeIdGen is used to customize type name
-	typeIdGen func(reflect.Type) string
+	// typeIDGen is used to customize type name
+	typeIDGen func(reflect.Type) string
 	// filter is used to eliminate nodes with certain conditions in the
 	// scan result
 	// return false to reject nodes
@@ -58,7 +58,7 @@ func NewScanner(ctx context.Context) *Scanner {
 		nodeIDCh:  make(chan NodeID),
 		nodes:     make(map[NodeID]*Node),
 		maps:      make(map[NodeID]map[NodeID]NodeID),
-		typeIdGen: getTypeID,
+		typeIDGen: getTypeID,
 	}
 	if ctx == nil {
 		scanner.ctx = context.Background()
@@ -68,7 +68,7 @@ func NewScanner(ctx context.Context) *Scanner {
 }
 
 // WithParallism configures the number of goroutines running in parallel
-// effectivelly it's controlling the channel buffer size
+// effectively it's controlling the channel buffer size
 // by default it's processed in serial
 func (s *Scanner) WithParallism(p int) *Scanner {
 	s.parallism = p
@@ -135,7 +135,7 @@ func (s *Scanner) registerNode(node *Node) *Node {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	nid := node.NodeID(s.typeIdGen)
+	nid := node.NodeID(s.typeIDGen)
 	if prevNodePtr, exist := s.nodes[nid]; exist {
 		return prevNodePtr
 	}
@@ -145,7 +145,7 @@ func (s *Scanner) registerNode(node *Node) *Node {
 }
 
 func (s *Scanner) getNodeID(node *Node) NodeID {
-	return node.NodeID(s.typeIdGen)
+	return node.NodeID(s.typeIDGen)
 }
 
 // decompose breaks the given interface down
@@ -167,7 +167,7 @@ func (s *Scanner) decompose(ctx context.Context, parent *Node, obj reflect.Value
 
 	// register node itself as its parents' node
 	if parent != nil {
-		defer parent.RegisterChild(node, s.typeIdGen)
+		defer parent.RegisterChild(node, s.typeIDGen)
 	}
 	// register node itself as its parent's field
 	if parent != nil && meta != nil {

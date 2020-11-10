@@ -2,6 +2,7 @@
 
 [![Build workflow](https://img.shields.io/github/workflow/status/hanlins/xray/Go)](https://img.shields.io/github/workflow/status/hanlins/xray/Go)
 [![GoDoc](https://godoc.org/github.com/hanlins/xray?status.svg)](https://godoc.org/github.com/hanlins/xray)
+[![Go Report Card](https://goreportcard.com/badge/github.com/hanlins/xray)](https://goreportcard.com/report/github.com/hanlins/xray)
 
 ## Introduction
 

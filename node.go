@@ -49,24 +49,24 @@ func (n *Node) ResolveObj() interface{} {
 }
 
 // NodeID derives the NodeID for a given node
-func (n *Node) NodeID(typeIdGen func(reflect.Type) string) NodeID {
+func (n *Node) NodeID(typeIDGen func(reflect.Type) string) NodeID {
 	id := NodeID{value: n.value}
 	emptyValue := reflect.Value{}
 	if n.value == emptyValue {
 		id.typeStr = "nil"
 	} else {
-		id.typeStr = typeIdGen(n.value.Type())
+		id.typeStr = typeIDGen(n.value.Type())
 	}
 	return id
 }
 
 // RegisterChild returns true if successfully register child node
 // return false if the child has already been registered
-func (n *Node) RegisterChild(node *Node, typeIdGen func(reflect.Type) string) bool {
+func (n *Node) RegisterChild(node *Node, typeIDGen func(reflect.Type) string) bool {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
-	id := node.NodeID(typeIdGen)
+	id := node.NodeID(typeIDGen)
 	if _, exist := n.Children[id]; exist {
 		return false
 	}
