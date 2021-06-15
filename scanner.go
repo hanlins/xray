@@ -353,5 +353,7 @@ func (s *Scanner) Maps() map[NodeID]map[NodeID]NodeID {
 
 // Node returns the Node object based on ID
 func (s *Scanner) Node(id NodeID) *Node {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	return s.nodes[id]
 }

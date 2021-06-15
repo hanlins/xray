@@ -195,3 +195,15 @@ func TestDrawLinkedListLoop(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, g)
 }
+
+func BenchmarkDrawStruct(b *testing.B) {
+	l1 := &listnode{val: 1}
+	l1.next = &listnode{val: 2}
+	l1.next.next = &listnode{val: 3}
+	l1.next.next.next = l1
+
+	s := xray.NewScanner(nil)
+	nodeCh := s.Scan(l1)
+
+	Draw(NewGraphInfo(s), nodeCh, nil)
+}
