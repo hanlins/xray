@@ -448,7 +448,8 @@ func BenchmarkBigMap(b *testing.B) {
 	s := NewScanner(nil)
 	c := s.Scan(bigStrMap)
 
-	for _ = range c {
+	for nid := range c {
+		_ = s.Node(nid)
 	}
 }
 
@@ -456,7 +457,8 @@ func BenchmarkBigList(b *testing.B) {
 	s := NewScanner(nil)
 	c := s.Scan(bigStrList)
 
-	for _ = range c {
+	for nid := range c {
+		_ = s.Node(nid)
 	}
 }
 
