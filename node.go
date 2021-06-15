@@ -85,7 +85,7 @@ func (n *Node) Kind() reflect.Kind {
 	return n.value.Kind()
 }
 
-// Kind returns the kind of the current node
+// Value returns the value of the current node
 func (n *Node) Value() reflect.Value {
 	return n.value
 }

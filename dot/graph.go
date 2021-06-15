@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	// Label marks the label key for the node
 	Label = "label"
 )
 
