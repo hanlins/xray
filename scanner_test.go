@@ -2,11 +2,21 @@ package xray
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	scaleLimit = 1e4
+)
+
+var (
+	bigStrMap  map[string]string
+	bigStrList []string
 )
 
 func TestDefaultTypeIdGenerator(t *testing.T) {
@@ -432,4 +442,30 @@ func TestScannerMaps(t *testing.T) {
 	_ = s.Scan(nil)
 
 	assert.Equal(t, s.maps, s.Maps())
+}
+
+func BenchmarkBigMap(b *testing.B) {
+	s := NewScanner(nil)
+	c := s.Scan(bigStrMap)
+
+	for _ = range c {
+	}
+}
+
+func BenchmarkBigList(b *testing.B) {
+	s := NewScanner(nil)
+	c := s.Scan(bigStrList)
+
+	for _ = range c {
+	}
+}
+
+func init() {
+	bigStrMap = make(map[string]string)
+	bigStrList = make([]string, scaleLimit)
+	for i := 0; i < scaleLimit; i++ {
+		num := fmt.Sprintf("%d", i)
+		bigStrMap[num] = num
+		bigStrList[i] = num
+	}
 }

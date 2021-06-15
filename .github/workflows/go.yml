@@ -31,3 +31,7 @@ jobs:
 
     - name: Test
       run: go test ./... -v -cover -count=1
+
+
+    - name: Benchmark
+      run: go test -bench=.
